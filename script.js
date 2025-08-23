@@ -182,6 +182,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const testFile = new File([""], "test.png", { type: "image/png" });
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [testFile] })) {
                 finalCanvas.toBlob(async (blob) => {
+                    if (!blob) {
+                        alert("Не удалось создать изображение для отправки.");
+                        return;
+                    }
                     const file = new File([blob], `chat-story-${appData.currentMode}.png`, { type: 'image/png' });
                     try {
                         await navigator.share({
@@ -189,7 +193,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             files: [file]
                         });
                     } catch (err) {
-                        console.log("Пользователь отменил шеринг, показываем предпросмотр:", err);
+                        if (err.name !== 'AbortError') {
+                          console.error("Ошибка при отправке:", err);
+                        }
+                        console.log("Пользователь отменил шеринг, показываем предпросмотр.");
                         exportPreviewImg.src = finalCanvas.toDataURL("image/png");
                         exportPreviewOverlay.classList.add('visible');
                     }
@@ -226,7 +233,22 @@ document.addEventListener('DOMContentLoaded', () => {
         addParticipantModalBtn.style.display = state.participants.length < 5 ? 'block' : 'none';
         participantsModalOverlay.classList.add('visible');
     }
-    function editParticipantName(id) { const state = appData.group; const participant = state.participants.find(p => p.id === id); const newName = prompt(`Введите новое имя для "${participant.name}":`, participant.name); if (newName && newName.trim()) { participant.name = newName.trim(); saveState(); renderAll(); openParticipantsModal(); } }
+    
+    // ----- ИСПРАВЛЕННАЯ ФУНКЦИЯ -----
+    function editParticipantName(id) {
+        const state = appData.group;
+        const participant = state.participants.find(p => p.id === id);
+        const newName = prompt(`Введите новое имя для "${participant.name}":`, participant.name);
+        // Было: if (newName && newTime.trim())
+        // Стало: if (newName && newName.trim())
+        if (newName && newName.trim()) {
+            participant.name = newName.trim();
+            saveState();
+            renderAll();
+            openParticipantsModal();
+        }
+    }
+    
     function deleteParticipant(id) { if (id === 1) return; const state = appData.group; if (state.participants.length <= 2) return; if (confirm('Вы уверены, что хотите удалить этого участника?')) { state.participants = state.participants.filter(p => p.id !== id); state.messages = state.messages.filter(m => m.participantId !== id); if (state.selectedParticipantId === id) { state.selectedParticipantId = state.participants[0].id; } saveState(); renderAll(); openParticipantsModal(); } }
     function addParticipant() { const state = appData.group; if (state.participants.length >= 5) return; const name = prompt('Введите имя нового участника:', `Участник ${state.participants.length}`); if (name && name.trim()) { const newParticipant = { id: state.nextParticipantId++, name: name.trim(), type: 'received' }; state.participants.push(newParticipant); saveState(); renderAll(); openParticipantsModal(); selectParticipant(newParticipant.id); } }
     function changeBackground(bgValue, shouldSave = true) { const state = appData[appData.currentMode]; state.currentBackground = bgValue; chatScreen.style.background = bgValue; chatScreen.style.backgroundSize = 'cover'; chatScreen.style.backgroundPosition = 'center'; document.querySelectorAll('.color-swatch').forEach(swatch => { swatch.classList.toggle('active', swatch.dataset.bg === bgValue); }); if (shouldSave) saveState(); }
@@ -281,4 +303,9 @@ document.addEventListener('DOMContentLoaded', () => {
     loadState();
     renderColorPalette();
     switchMode(appData.currentMode);
+    
+    // Сообщаем Telegram, что приложение готово
+    if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.ready();
+    }
 });
