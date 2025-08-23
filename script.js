@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Элементы DOM ---
+    // --- Элементы DOM (без изменений) ---
     const appContainer = document.getElementById('app-container');
     const chatScreen = document.getElementById('chat-screen');
     const messageInput = document.getElementById('message-input');
@@ -18,15 +18,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportPreviewOverlay = document.getElementById('export-preview-overlay');
     const exportPreviewImg = document.getElementById('export-preview-img');
 
-    // --- Фиксация высоты для мобильных устройств ---
+    // --- Остальной код до функции exportChat (без изменений) ---
     function setFixedViewportHeight() {
         const vh = window.innerHeight;
         appContainer.style.height = `${vh - 30}px`;
     }
     setFixedViewportHeight();
     window.addEventListener('resize', setFixedViewportHeight);
-
-    // --- Массив с локальными фонами ---
     const backgroundOptions = [
         { id: 'bg1', value: `url("1.jpg")` }, { id: 'bg2', value: `url("2.jpg")` },
         { id: 'bg3', value: `url("3.jpg")` }, { id: 'bg4', value: `url("4.jpg")` },
@@ -35,10 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 'bg9', value: `url("9.jpg")` }, { id: 'bg10', value: `url("10.jpg")` }
     ];
     const nameColors = ['#ca6052', '#3e95c5', '#5eb44f', '#d7894a', '#8c62a5', '#4e9b95', '#d4769a', '#cb823f'];
-    
-    // --- Структура состояния ---
     let appData = {};
-
     function getInitialState() {
         return {
             currentMode: 'personal',
@@ -47,13 +42,11 @@ document.addEventListener('DOMContentLoaded', () => {
             group: { participants: [ { id: 1, name: 'Вы', type: 'sent' }, { id: 2, name: 'Анна', type: 'received' }, { id: 3, name: 'Павел', type: 'received' } ], messages: [], nextParticipantId: 4, selectedParticipantId: 1, currentBackground: backgroundOptions[0].value }
         };
     }
-    
     function saveState() { localStorage.setItem('chatStoryState_mobile_final', JSON.stringify(appData)); }
     function loadState() {
         const savedState = localStorage.getItem('chatStoryState_mobile_final');
         appData = savedState ? JSON.parse(savedState) : getInitialState();
     }
-
     function renderMessages(state) {
         chatScreen.innerHTML = ''; 
         state.messages.forEach(msg => {
@@ -101,7 +94,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         chatScreen.scrollTop = chatScreen.scrollHeight;
     }
-    
     function sendMessage() {
         const text = messageInput.value.trim(); if (!text) return;
         const state = appData[appData.currentMode];
@@ -111,9 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messageInput.value = ''; messageInput.style.height = 'auto';
         renderMessages(state); saveState();
     }
-    
     function setTime() { const newTime = prompt('Введите время для следующих сообщений (например, 21:45):', appData.currentTime); if (newTime && newTime.match(/^\d{1,2}:\d{2}$/)) { appData.currentTime = newTime; saveState(); } else if (newTime) { alert('Неверный формат времени. Используйте ЧЧ:ММ.'); } }
-    
     function changeMessageStatus(id) {
         const state = appData[appData.currentMode];
         const message = state.messages.find(m => m.id === id); if (!message) return;
@@ -123,7 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
         message.status = statuses[nextIndex];
         renderMessages(state); saveState();
     }
-
     async function createFinalCanvas() {
         const finalCanvas = document.createElement('canvas');
         const ctx = finalCanvas.getContext('2d');
@@ -131,27 +120,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const exportHeight = 1920;
         finalCanvas.width = exportWidth;
         finalCanvas.height = exportHeight;
-
         const state = appData[appData.currentMode];
         const bgValue = state.currentBackground;
         const urlMatch = bgValue.match(/url\("(.+?)"\)/);
-
         if (urlMatch) {
             const img = new Image();
             img.src = urlMatch[1];
             await new Promise(resolve => { img.onload = resolve; });
             ctx.drawImage(img, 0, 0, exportWidth, exportHeight);
         }
-
         const messageElements = Array.from(chatScreen.querySelectorAll('.message-wrapper'));
         const messageCanvases = await Promise.all(messageElements.map(el =>
             html2canvas(el, { scale: 3, backgroundColor: null, useCORS: true })
         ));
-
         let currentY = 60;
         const sidePadding = 45;
         const messageGap = 6;
-        
         for (let i = 0; i < messageCanvases.length; i++) {
             const msgCanvas = messageCanvases[i];
             const el = messageElements[i];
@@ -162,15 +146,14 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.drawImage(msgCanvas, xPosition, currentY);
             currentY += msgCanvas.height + messageGap;
         }
-        
         ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
         ctx.font = 'bold 32px -apple-system, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('by Chat Story Maker', exportWidth / 2, exportHeight - 60);
-
         return finalCanvas;
     }
 
+    // --- НОВАЯ, ОБНОВЛЕННАЯ ФУНКЦИЯ ---
     async function exportChat() {
         const originalButtonText = exportBtn.textContent;
         exportBtn.disabled = true;
@@ -178,43 +161,73 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const finalCanvas = await createFinalCanvas();
+            
+            exportBtn.textContent = 'Загрузка...';
 
-            const testFile = new File([""], "test.png", { type: "image/png" });
-            if (navigator.share && navigator.canShare && navigator.canShare({ files: [testFile] })) {
-                finalCanvas.toBlob(async (blob) => {
-                    if (!blob) {
-                        alert("Не удалось создать изображение для отправки.");
-                        return;
+            // 1. Конвертируем Canvas в Blob-объект (файл в памяти)
+            finalCanvas.toBlob(async (blob) => {
+                if (!blob) {
+                    alert("Ошибка: не удалось создать изображение.");
+                    exportBtn.disabled = false;
+                    exportBtn.textContent = originalButtonText;
+                    return;
+                }
+
+                // 2. Готовим данные для отправки на telegra.ph
+                const formData = new FormData();
+                formData.append('file', blob, 'chat-story.png');
+
+                try {
+                    // 3. Отправляем изображение на сервер telegra.ph
+                    const response = await fetch('https://telegra.ph/upload', {
+                        method: 'POST',
+                        body: formData,
+                    });
+
+                    const result = await response.json();
+
+                    if (result.error) {
+                        throw new Error(result.error);
                     }
-                    const file = new File([blob], `chat-story-${appData.currentMode}.png`, { type: 'image/png' });
-                    try {
-                        await navigator.share({
-                            title: 'Chat Story',
-                            files: [file]
-                        });
-                    } catch (err) {
-                        if (err.name !== 'AbortError') {
-                          console.error("Ошибка при отправке:", err);
-                        }
-                        console.log("Пользователь отменил шеринг, показываем предпросмотр.");
-                        exportPreviewImg.src = finalCanvas.toDataURL("image/png");
-                        exportPreviewOverlay.classList.add('visible');
+
+                    // 4. Получаем прямую ссылку на изображение
+                    const imageUrl = 'https://telegra.ph' + result[0].src;
+
+                    // 5. Формируем специальную ссылку для шаринга в Telegram
+                    const shareText = encodeURIComponent("Смотри, какую историю я создал!");
+                    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(imageUrl)}&text=${shareText}`;
+
+                    // 6. Открываем нативное окно "Поделиться" в Telegram
+                    if (window.Telegram && window.Telegram.WebApp) {
+                        window.Telegram.WebApp.openTelegramLink(shareUrl);
+                    } else {
+                        // Фоллбэк для обычного браузера
+                        window.open(shareUrl, '_blank');
                     }
-                }, 'image/png');
-            } else {
-                exportPreviewImg.src = finalCanvas.toDataURL("image/png");
-                exportPreviewOverlay.classList.add('visible');
-            }
+
+                } catch (uploadError) {
+                    console.error("Ошибка при загрузке на telegra.ph:", uploadError);
+                    alert("Не удалось загрузить изображение для отправки. Попробуйте снова.");
+                     // Если загрузка не удалась, показываем старый предпросмотр
+                    exportPreviewImg.src = finalCanvas.toDataURL("image/png");
+                    exportPreviewOverlay.classList.add('visible');
+                } finally {
+                    exportBtn.disabled = false;
+                    exportBtn.textContent = originalButtonText;
+                }
+
+            }, 'image/png');
 
         } catch (err) {
-            console.error("Ошибка при экспорте:", err);
-            alert("Произошла ошибка при сохранении изображения.");
-        } finally {
+            console.error("Ошибка при создании изображения:", err);
+            alert("Произошла ошибка при создании изображения.");
             exportBtn.disabled = false;
             exportBtn.textContent = originalButtonText;
         }
     }
 
+
+    // --- Весь остальной код после exportChat (без изменений) ---
     function switchMode(newMode) { if (appData.currentMode === newMode) return; appData.currentMode = newMode; document.querySelectorAll('.mode-btn').forEach(btn => { btn.classList.toggle('active', btn.dataset.mode === newMode); }); renderAll(); saveState(); }
     function renderAll() { const state = appData[appData.currentMode]; renderMessages(state); updateSenderSelector(state); changeBackground(state.currentBackground, false); }
     function resetChat() { if (confirm('Вы уверены, что хотите удалить все сообщения в этом чате? Это действие нельзя отменить.')) { const state = appData[appData.currentMode]; state.messages = []; renderAll(); saveState(); } }
@@ -233,14 +246,10 @@ document.addEventListener('DOMContentLoaded', () => {
         addParticipantModalBtn.style.display = state.participants.length < 5 ? 'block' : 'none';
         participantsModalOverlay.classList.add('visible');
     }
-    
-    // ----- ИСПРАВЛЕННАЯ ФУНКЦИЯ -----
     function editParticipantName(id) {
         const state = appData.group;
         const participant = state.participants.find(p => p.id === id);
         const newName = prompt(`Введите новое имя для "${participant.name}":`, participant.name);
-        // Было: if (newName && newTime.trim())
-        // Стало: if (newName && newName.trim())
         if (newName && newName.trim()) {
             participant.name = newName.trim();
             saveState();
@@ -248,7 +257,6 @@ document.addEventListener('DOMContentLoaded', () => {
             openParticipantsModal();
         }
     }
-    
     function deleteParticipant(id) { if (id === 1) return; const state = appData.group; if (state.participants.length <= 2) return; if (confirm('Вы уверены, что хотите удалить этого участника?')) { state.participants = state.participants.filter(p => p.id !== id); state.messages = state.messages.filter(m => m.participantId !== id); if (state.selectedParticipantId === id) { state.selectedParticipantId = state.participants[0].id; } saveState(); renderAll(); openParticipantsModal(); } }
     function addParticipant() { const state = appData.group; if (state.participants.length >= 5) return; const name = prompt('Введите имя нового участника:', `Участник ${state.participants.length}`); if (name && name.trim()) { const newParticipant = { id: state.nextParticipantId++, name: name.trim(), type: 'received' }; state.participants.push(newParticipant); saveState(); renderAll(); openParticipantsModal(); selectParticipant(newParticipant.id); } }
     function changeBackground(bgValue, shouldSave = true) { const state = appData[appData.currentMode]; state.currentBackground = bgValue; chatScreen.style.background = bgValue; chatScreen.style.backgroundSize = 'cover'; chatScreen.style.backgroundPosition = 'center'; document.querySelectorAll('.color-swatch').forEach(swatch => { swatch.classList.toggle('active', swatch.dataset.bg === bgValue); }); if (shouldSave) saveState(); }
@@ -262,8 +270,6 @@ document.addEventListener('DOMContentLoaded', () => {
             colorPalette.appendChild(swatch);
         });
     }
-
-    // --- Обработчики событий ---
     modeSwitcher.addEventListener('click', (e) => { if (e.target.classList.contains('mode-btn')) switchMode(e.target.dataset.mode); });
     sendBtn.addEventListener('click', sendMessage);
     messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }});
@@ -284,7 +290,6 @@ document.addEventListener('DOMContentLoaded', () => {
             changeMessageStatus(Number(messageEl.dataset.messageId));
         }
     });
-
     document.addEventListener('click', (e) => {
         if (
             colorPalette.classList.contains('visible') &&
@@ -294,17 +299,12 @@ document.addEventListener('DOMContentLoaded', () => {
             colorPalette.classList.remove('visible');
         }
     });
-    
     exportPreviewOverlay.addEventListener('click', () => {
         exportPreviewOverlay.classList.remove('visible');
     });
-
-    // --- ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ---
     loadState();
     renderColorPalette();
     switchMode(appData.currentMode);
-    
-    // Сообщаем Telegram, что приложение готово
     if (window.Telegram && window.Telegram.WebApp) {
         window.Telegram.WebApp.ready();
     }
