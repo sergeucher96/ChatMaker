@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Элементы DOM ---
+    // --- ЭЛЕМЕНТЫ DOM ---
+    const splashScreen = document.getElementById('splash-screen');
+    const enterFullscreenBtn = document.getElementById('enter-fullscreen-btn');
     const appContainer = document.getElementById('app-container');
     const chatScreen = document.getElementById('chat-screen');
     const messageInput = document.getElementById('message-input');
@@ -18,12 +20,45 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportPreviewOverlay = document.getElementById('export-preview-overlay');
     const exportPreviewImg = document.getElementById('export-preview-img');
 
+    // --- ЛОГИКА ПОЛНОЭКРАННОГО РЕЖИМА ---
+    function goFullscreen() {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen().catch(err => {
+                console.error(`Ошибка при входе в полноэкранный режим: ${err.message}`);
+                // Если не удалось, просто запускаем приложение
+                startApp();
+            });
+        } else if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) {
+            elem.msRequestFullscreen();
+        } else {
+             // Если API не поддерживается, просто запускаем приложение
+            startApp();
+        }
+    }
+
+    function startApp() {
+        splashScreen.style.display = 'none';
+        appContainer.style.display = 'flex';
+        setFixedViewportHeight(); // Вызываем после показа, чтобы размеры были корректны
+    }
+
+    enterFullscreenBtn.addEventListener('click', () => {
+        goFullscreen();
+        // Примечание: startApp() будет вызван либо сразу (если API не поддерживается), 
+        // либо после выхода из полноэкранного режима, либо его нужно вызвать принудительно.
+        // Для простоты, вызовем его сразу после запроса.
+        startApp();
+    });
+
     // --- Фиксация высоты для мобильных устройств ---
     function setFixedViewportHeight() {
+        // Теперь используем 100% высоты окна, так как нет внешних рамок
         const vh = window.innerHeight;
-        appContainer.style.height = `${vh - 30}px`;
+        appContainer.style.height = `${vh}px`;
     }
-    setFixedViewportHeight();
     window.addEventListener('resize', setFixedViewportHeight);
 
     // --- Данные ---
@@ -180,16 +215,14 @@ document.addEventListener('DOMContentLoaded', () => {
             exportPreviewImg.src = imageUrl;
             exportPreviewOverlay.classList.add('visible');
             
-            // --- НОВАЯ ЛОГИКА ДЛЯ ПОЛНОЭКРАННОГО РЕЖИМА ---
             const elem = exportPreviewOverlay;
             if (elem.requestFullscreen) {
                 elem.requestFullscreen();
-            } else if (elem.webkitRequestFullscreen) { /* Safari */
+            } else if (elem.webkitRequestFullscreen) {
                 elem.webkitRequestFullscreen();
-            } else if (elem.msRequestFullscreen) { /* IE11 */
+            } else if (elem.msRequestFullscreen) {
                 elem.msRequestFullscreen();
             }
-            // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
 
         } catch (err) {
             console.error("Ошибка при создании изображения:", err);
@@ -203,9 +236,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function exitFullscreen() {
         if (document.exitFullscreen) {
             document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) { /* Safari */
+        } else if (document.webkitExitFullscreen) {
             document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) { /* IE11 */
+        } else if (document.msExitFullscreen) {
             document.msExitFullscreen();
         }
     }
@@ -290,4 +323,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadState();
     renderColorPalette();
     switchMode(appData.currentMode);
+    // Добавляем инициализацию Telegram Web App
+    if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.ready();
+    }
 });
