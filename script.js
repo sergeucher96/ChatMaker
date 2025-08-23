@@ -15,10 +15,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const addParticipantModalBtn = document.getElementById('add-participant-modal-btn');
     const resetChatBtn = document.getElementById('reset-chat-btn');
     const setTimeBtn = document.getElementById('set-time-btn');
-    const exportPreviewOverlay = document.getElementById('export-preview-overlay');
-    const exportPreviewImg = document.getElementById('export-preview-img');
-    const downloadPreviewBtn = document.getElementById('download-preview-btn');
-    const closePreviewBtn = document.getElementById('close-preview-btn');
+    // Старые элементы предпросмотра больше не используются в этой логике
+    // const exportPreviewOverlay = document.getElementById('export-preview-overlay');
+    // const exportPreviewImg = document.getElementById('export-preview-img');
+
+    // Инициализируем Telegram Web App
+    const tg = window.Telegram.WebApp;
+    tg.ready();
 
     // --- Фиксация высоты для мобильных устройств ---
     function setFixedViewportHeight() {
@@ -28,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setFixedViewportHeight();
     window.addEventListener('resize', setFixedViewportHeight);
 
-    // --- Массив с локальными фонами ---
+    // --- Массивы с данными ---
     const backgroundOptions = [
         { id: 'bg1', value: `url("1.jpg")` }, { id: 'bg2', value: `url("2.jpg")` },
         { id: 'bg3', value: `url("3.jpg")` }, { id: 'bg4', value: `url("4.jpg")` },
@@ -166,43 +169,37 @@ document.addEventListener('DOMContentLoaded', () => {
         return finalCanvas;
     }
     
-    async function exportChat() {
+    let imageDataUrl = null;
+
+    function mainButtonClickHandler() {
+        if (imageDataUrl) {
+            tg.sendData(imageDataUrl);
+        }
+    }
+
+    async function prepareForExport() {
         const originalButtonText = exportBtn.textContent;
         exportBtn.disabled = true;
         exportBtn.textContent = 'Создание...';
-
+        
         try {
             const finalCanvas = await createFinalCanvas();
-            const testFile = new File([""], "test.png", {type: "image/png"});
+            imageDataUrl = finalCanvas.toDataURL('image/jpeg', 0.85);
+
+            tg.MainButton.setText('Отправить картинку в чат');
+            tg.MainButton.show();
             
-            if (navigator.share && navigator.canShare && navigator.canShare({ files: [testFile] })) {
-                finalCanvas.toBlob(async (blob) => {
-                    if (!blob) {
-                        alert("Не удалось создать изображение для отправки.");
-                        return;
-                    }
-                    const file = new File([blob], `chat-story.png`, { type: 'image/png' });
-                    try {
-                        await navigator.share({ title: 'Chat Story', files: [file] });
-                    } catch (err) {
-                        if (err.name !== 'AbortError') { console.error("Ошибка navigator.share:", err); }
-                    }
-                }, 'image/png');
-            } else {
-                const imageUrl = finalCanvas.toDataURL("image/png");
-                exportPreviewImg.src = imageUrl;
-                downloadPreviewBtn.href = imageUrl;
-                exportPreviewOverlay.classList.add('visible');
-            }
+            tg.showAlert('Картинка готова! Нажмите "Отправить" внизу, чтобы получить ее в чате.');
+
         } catch (err) {
             console.error("Ошибка при создании изображения:", err);
-            alert("Произошла ошибка при создании изображения.");
+            tg.showAlert('Произошла ошибка при создании изображения.');
         } finally {
             exportBtn.disabled = false;
             exportBtn.textContent = originalButtonText;
         }
     }
-
+    
     function switchMode(newMode) { if (appData.currentMode === newMode) return; appData.currentMode = newMode; document.querySelectorAll('.mode-btn').forEach(btn => { btn.classList.toggle('active', btn.dataset.mode === newMode); }); renderAll(); saveState(); }
     function renderAll() { const state = appData[appData.currentMode]; renderMessages(state); updateSenderSelector(state); changeBackground(state.currentBackground, false); }
     function resetChat() { if (confirm('Вы уверены, что хотите удалить все сообщения в этом чате? Это действие нельзя отменить.')) { const state = appData[appData.currentMode]; state.messages = []; renderAll(); saveState(); } }
@@ -221,7 +218,6 @@ document.addEventListener('DOMContentLoaded', () => {
         addParticipantModalBtn.style.display = state.participants.length < 5 ? 'block' : 'none';
         participantsModalOverlay.classList.add('visible');
     }
-    
     function editParticipantName(id) {
         const state = appData.group;
         const participant = state.participants.find(p => p.id === id);
@@ -233,7 +229,6 @@ document.addEventListener('DOMContentLoaded', () => {
             openParticipantsModal();
         }
     }
-    
     function deleteParticipant(id) { if (id === 1) return; const state = appData.group; if (state.participants.length <= 2) return; if (confirm('Вы уверены, что хотите удалить этого участника?')) { state.participants = state.participants.filter(p => p.id !== id); state.messages = state.messages.filter(m => m.participantId !== id); if (state.selectedParticipantId === id) { state.selectedParticipantId = state.participants[0].id; } saveState(); renderAll(); openParticipantsModal(); } }
     function addParticipant() { const state = appData.group; if (state.participants.length >= 5) return; const name = prompt('Введите имя нового участника:', `Участник ${state.participants.length}`); if (name && name.trim()) { const newParticipant = { id: state.nextParticipantId++, name: name.trim(), type: 'received' }; state.participants.push(newParticipant); saveState(); renderAll(); openParticipantsModal(); selectParticipant(newParticipant.id); } }
     function changeBackground(bgValue, shouldSave = true) { const state = appData[appData.currentMode]; state.currentBackground = bgValue; chatScreen.style.background = bgValue; chatScreen.style.backgroundSize = 'cover'; chatScreen.style.backgroundPosition = 'center'; document.querySelectorAll('.color-swatch').forEach(swatch => { swatch.classList.toggle('active', swatch.dataset.bg === bgValue); }); if (shouldSave) saveState(); }
@@ -249,15 +244,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Обработчики событий ---
+    exportBtn.addEventListener('click', prepareForExport);
+    tg.onEvent('mainButtonClicked', mainButtonClickHandler);
+
     modeSwitcher.addEventListener('click', (e) => { if (e.target.classList.contains('mode-btn')) switchMode(e.target.dataset.mode); });
     sendBtn.addEventListener('click', sendMessage);
     messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }});
     messageInput.addEventListener('input', function () { this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; });
-    exportBtn.addEventListener('click', exportChat);
     senderSelectorBtn.addEventListener('click', handleSenderSelection);
     addParticipantModalBtn.addEventListener('click', addParticipant);
     closeParticipantsModalBtn.addEventListener('click', () => participantsModalOverlay.classList.remove('visible'));
-    participantsModalOverlay.addEventListener('click', (e) => { if (e.target === exportPreviewOverlay) exportPreviewOverlay.classList.remove('visible'); });
+    participantsModalOverlay.addEventListener('click', (e) => { if (e.target === participantsModalOverlay) participantsModalOverlay.classList.remove('visible'); });
     participantsList.addEventListener('click', (e) => { const targetLi = e.target.closest('li'); if (!targetLi) return; const editBtn = e.target.closest('.edit-btn'); const deleteBtn = e.target.closest('.delete-btn'); if (editBtn) { editParticipantName(parseInt(editBtn.dataset.id)); } else if (deleteBtn) { deleteParticipant(parseInt(deleteBtn.dataset.id)); } else { selectParticipant(parseInt(targetLi.dataset.id)); } });
     changeBgBtn.addEventListener('click', () => colorPalette.classList.toggle('visible'));
     colorPalette.addEventListener('click', (e) => { if (e.target.classList.contains('color-swatch')) changeBackground(e.target.dataset.bg); });
@@ -275,16 +272,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // Закрытие окна предпросмотра
-    closePreviewBtn.addEventListener('click', () => { exportPreviewOverlay.classList.remove('visible'); });
-    exportPreviewOverlay.addEventListener('click', (e) => { if (e.target === exportPreviewOverlay) { exportPreviewOverlay.classList.remove('visible'); } });
-
-
     // --- ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ---
     loadState();
     renderColorPalette();
     switchMode(appData.currentMode);
-    if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.ready();
-    }
 });
