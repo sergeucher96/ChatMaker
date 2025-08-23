@@ -79,14 +79,10 @@ document.addEventListener('DOMContentLoaded', () => {
             ticksEl.className = 'message-ticks';
             if(msg.status === 'read') ticksEl.classList.add('read');
             if (msg.status && msg.status !== 'none') {
-                const tick1 = document.createElement('div');
-                tick1.className = 'tick tick-1';
-                ticksEl.appendChild(tick1);
+                const tick1 = document.createElement('div'); tick1.className = 'tick tick-1'; ticksEl.appendChild(tick1);
             }
             if (msg.status === 'delivered' || msg.status === 'read') {
-                const tick2 = document.createElement('div');
-                tick2.className = 'tick tick-2';
-                ticksEl.appendChild(tick2);
+                const tick2 = document.createElement('div'); tick2.className = 'tick tick-2'; ticksEl.appendChild(tick2);
             }
             metaEl.appendChild(ticksEl);
             messageEl.appendChild(contentEl);
@@ -96,7 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         chatScreen.scrollTop = chatScreen.scrollHeight;
     }
-
     function sendMessage() {
         const text = messageInput.value.trim(); if (!text) return;
         const state = appData[appData.currentMode];
@@ -106,7 +101,6 @@ document.addEventListener('DOMContentLoaded', () => {
         messageInput.value = ''; messageInput.style.height = 'auto';
         renderMessages(state); saveState();
     }
-
     function setTime() {
         const newTime = prompt('Введите время для следующих сообщений (например, 21:45):', appData.currentTime);
         if (newTime && newTime.match(/^\d{1,2}:\d{2}$/)) {
@@ -116,7 +110,6 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Неверный формат времени. Используйте ЧЧ:ММ.');
         }
     }
-
     function changeMessageStatus(id) {
         const state = appData[appData.currentMode];
         const message = state.messages.find(m => m.id === id);
@@ -128,7 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMessages(state);
         saveState();
     }
-
     async function createFinalCanvas() {
         const finalCanvas = document.createElement('canvas');
         const ctx = finalCanvas.getContext('2d');
@@ -176,7 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return finalCanvas;
     }
     
-    // ФИНАЛЬНАЯ, УПРОЩЕННАЯ И РАБОЧАЯ ФУНКЦИЯ ЭКСПОРТА
     async function exportChat() {
         const originalButtonText = exportBtn.textContent;
         exportBtn.disabled = true;
@@ -186,9 +177,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const finalCanvas = await createFinalCanvas();
             const imageUrl = finalCanvas.toDataURL("image/png");
             
-            // Помещаем картинку в оверлей и показываем его
             exportPreviewImg.src = imageUrl;
             exportPreviewOverlay.classList.add('visible');
+            
+            // --- НОВАЯ ЛОГИКА ДЛЯ ПОЛНОЭКРАННОГО РЕЖИМА ---
+            const elem = exportPreviewOverlay;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) { /* Safari */
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) { /* IE11 */
+                elem.msRequestFullscreen();
+            }
+            // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
 
         } catch (err) {
             console.error("Ошибка при создании изображения:", err);
@@ -196,6 +197,16 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             exportBtn.disabled = false;
             exportBtn.textContent = originalButtonText;
+        }
+    }
+
+    function exitFullscreen() {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) { /* Safari */
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) { /* IE11 */
+            document.msExitFullscreen();
         }
     }
 
@@ -272,6 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     exportPreviewOverlay.addEventListener('click', () => {
         exportPreviewOverlay.classList.remove('visible');
+        exitFullscreen();
     });
 
     // --- ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ---
