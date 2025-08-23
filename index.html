@@ -39,7 +39,7 @@
 
         <div class="export-controls">
             <button class="reset-chat-btn" id="reset-chat-btn">🗑️ Сбросить чат</button>
-            <button id="export-btn">Сохранить как картинку</button>
+            <button id="export-btn">Поделиться историей</button>
         </div>
     </div>
     
@@ -57,10 +57,16 @@
         </div>
     </div>
 
-    <!-- НОВЫЙ БЛОК: Оверлей для предпросмотра -->
+    <!-- ОБНОВЛЕННЫЙ БЛОК: Оверлей для предпросмотра -->
     <div class="export-preview-overlay" id="export-preview-overlay">
-        <img id="export-preview-img" src="" alt="Предпросмотр">
-        <div class="export-preview-text">Нажмите и удерживайте изображение, чтобы сохранить</div>
+        <div class="export-preview-content">
+            <img id="export-preview-img" src="" alt="Предпросмотр">
+            <div class="export-preview-actions">
+                <p>Предпросмотр (для ПК)</p>
+                <a href="#" id="download-preview-btn" class="download-btn" download="chat-story.png">Скачать картинку</a>
+                <button id="close-preview-btn" class="close-preview-btn">Закрыть</button>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
