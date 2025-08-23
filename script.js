@@ -29,20 +29,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Массив с локальными фонами ---
     const backgroundOptions = [
-        { id: 'bg1', value: `url("1.jpg")` },
-        { id: 'bg2', value: `url("2.jpg")` },
-        { id: 'bg3', value: `url("3.jpg")` },
-        { id: 'bg4', value: `url("4.jpg")` },
-        { id: 'bg5', value: `url("5.jpg")` },
-        { id: 'bg6', value: `url("6.jpg")` },
-        { id: 'bg7', value: `url("7.jpg")` },
-        { id: 'bg8', value: `url("8.jpg")` },
-        { id: 'bg9', value: `url("9.jpg")` },
-        { id: 'bg10', value: `url("10.jpg")` }
+        { id: 'bg1', value: `url("1.jpg")` }, { id: 'bg2', value: `url("2.jpg")` },
+        { id: 'bg3', value: `url("3.jpg")` }, { id: 'bg4', value: `url("4.jpg")` },
+        { id: 'bg5', value: `url("5.jpg")` }, { id: 'bg6', value: `url("6.jpg")` },
+        { id: 'bg7', value: `url("7.jpg")` }, { id: 'bg8', value: `url("8.jpg")` },
+        { id: 'bg9', value: `url("9.jpg")` }, { id: 'bg10', value: `url("10.jpg")` }
     ];
-
     const nameColors = ['#ca6052', '#3e95c5', '#5eb44f', '#d7894a', '#8c62a5', '#4e9b95', '#d4769a', '#cb823f'];
-
+    
     // --- Структура состояния ---
     let appData = {};
 
@@ -55,12 +49,39 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
     
-    function saveState() { localStorage.setItem('chatStoryState_mobile_final', JSON.stringify(appData)); }
+    function saveState() { localStorage.setItem('chatStoryState_final_final_working', JSON.stringify(appData)); }
     function loadState() {
-        const savedState = localStorage.getItem('chatStoryState_mobile_final');
+        const savedState = localStorage.getItem('chatStoryState_final_final_working');
         appData = savedState ? JSON.parse(savedState) : getInitialState();
     }
 
+    function switchMode(newMode) {
+        if (appData.currentMode === newMode) return;
+        appData.currentMode = newMode;
+        
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mode === newMode);
+        });
+        renderAll();
+        saveState();
+    }
+    
+    function renderAll() {
+        const state = appData[appData.currentMode];
+        renderMessages(state);
+        updateSenderSelector(state);
+        changeBackground(state.currentBackground, false);
+        // ИЗМЕНЕНО: Возвращаем эту важную строчку
+        updateUIForMode(); 
+    }
+
+    function updateUIForMode() {
+        // Эта функция теперь будет вызываться и все будет работать
+        const isGroup = appData.currentMode === 'group';
+        // Тут можно будет вернуть кнопку "Участники", если понадобится
+        // manageParticipantsBtn.style.display = isGroup ? 'block' : 'none';
+    }
+    
     function renderMessages(state) {
         chatScreen.innerHTML = ''; 
         state.messages.forEach(msg => {
@@ -68,38 +89,28 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!participant) return;
             const wrapper = document.createElement('div');
             wrapper.className = `message-wrapper ${participant.type}`;
-            
             if (appData.currentMode === 'group' && participant.type === 'received') {
                 const senderName = document.createElement('div');
                 senderName.className = 'sender-name';
                 senderName.textContent = participant.name;
-                if(participant.id > 1) {
-                   senderName.style.color = nameColors[(participant.id - 2) % nameColors.length];
-                }
+                if(participant.id > 1) { senderName.style.color = nameColors[(participant.id - 2) % nameColors.length]; }
                 wrapper.appendChild(senderName);
             }
-
             const messageEl = document.createElement('div');
             messageEl.className = 'message';
             messageEl.dataset.messageId = msg.id;
-
             const contentEl = document.createElement('span');
             contentEl.className = 'message-content';
             contentEl.textContent = msg.text;
-
             const metaEl = document.createElement('div');
             metaEl.className = 'message-meta';
-
             const timeEl = document.createElement('span');
             timeEl.className = 'message-time';
             timeEl.textContent = msg.time;
-            
             metaEl.appendChild(timeEl);
-            
             const ticksEl = document.createElement('div');
             ticksEl.className = 'message-ticks';
             if(msg.status === 'read') ticksEl.classList.add('read');
-
             if (msg.status && msg.status !== 'none') {
                 const tick1 = document.createElement('div');
                 tick1.className = 'tick tick-1';
@@ -111,7 +122,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 ticksEl.appendChild(tick2);
             }
             metaEl.appendChild(ticksEl);
-
             messageEl.appendChild(contentEl);
             messageEl.appendChild(metaEl);
             wrapper.appendChild(messageEl);
@@ -121,51 +131,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function sendMessage() {
-        const text = messageInput.value.trim();
-        if (!text) return;
+        const text = messageInput.value.trim(); if (!text) return;
         const state = appData[appData.currentMode];
         const participant = state.participants.find(p => p.id === state.selectedParticipantId);
-        
-        const newMessage = {
-            id: Date.now(),
-            text: text,
-            participantId: state.selectedParticipantId,
-            time: appData.currentTime,
-            status: participant?.type === 'sent' ? 'delivered' : 'none'
-        };
-        
+        const newMessage = { id: Date.now(), text: text, participantId: state.selectedParticipantId, time: appData.currentTime, status: participant?.type === 'sent' ? 'delivered' : 'none' };
         state.messages.push(newMessage);
-        messageInput.value = '';
-        messageInput.style.height = 'auto';
-        renderMessages(state);
-        saveState();
+        messageInput.value = ''; messageInput.style.height = 'auto';
+        renderMessages(state); saveState();
     }
     
-    function setTime() {
-        const newTime = prompt('Введите время для следующих сообщений (например, 21:45):', appData.currentTime);
-        if (newTime && newTime.match(/^\d{1,2}:\d{2}$/)) {
-            appData.currentTime = newTime;
-            saveState();
-        } else if (newTime) {
-            alert('Неверный формат времени. Используйте ЧЧ:ММ.');
-        }
-    }
-
+    function setTime() { const newTime = prompt('Введите время для следующих сообщений (например, 21:45):', appData.currentTime); if (newTime && newTime.match(/^\d{1,2}:\d{2}$/)) { appData.currentTime = newTime; saveState(); } else if (newTime) { alert('Неверный формат времени. Используйте ЧЧ:ММ.'); } }
+    
     function changeMessageStatus(id) {
         const state = appData[appData.currentMode];
-        const message = state.messages.find(m => m.id === id);
-        if (!message) return;
-
+        const message = state.messages.find(m => m.id === id); if (!message) return;
         const statuses = ['delivered', 'read', 'sent', 'none'];
         const currentIndex = statuses.indexOf(message.status);
         const nextIndex = (currentIndex + 1) % statuses.length;
         message.status = statuses[nextIndex];
-        
-        renderMessages(state);
-        saveState();
+        renderMessages(state); saveState();
     }
 
     async function createFinalCanvas() {
+        // ... (код этой функции без изменений)
         const finalCanvas = document.createElement('canvas');
         const ctx = finalCanvas.getContext('2d');
         const exportWidth = 1080;
@@ -220,7 +208,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const finalCanvas = await createFinalCanvas();
 
-            if (navigator.share) {
+            const testFile = new File([""], "test.png", { type: "image/png" });
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [testFile] })) {
                 finalCanvas.toBlob(async (blob) => {
                     const file = new File([blob], `chat-story-${appData.currentMode}.png`, { type: 'image/png' });
                     try {
@@ -229,7 +218,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             files: [file]
                         });
                     } catch (err) {
-                        console.log("Пользователь отменил шеринг:", err);
+                        console.log("Пользователь отменил шеринг, показываем предпросмотр:", err);
+                        exportPreviewImg.src = finalCanvas.toDataURL("image/png");
+                        exportPreviewOverlay.classList.add('visible');
                     }
                 }, 'image/png');
             } else {
@@ -246,15 +237,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function switchMode(newMode) { if (appData.currentMode === newMode) return; appData.currentMode = newMode; document.querySelectorAll('.mode-btn').forEach(btn => { btn.classList.toggle('active', btn.dataset.mode === newMode); }); renderAll(); saveState(); }
-    function renderAll() { const state = appData[appData.currentMode]; renderMessages(state); updateSenderSelector(state); changeBackground(state.currentBackground, false); }
     function resetChat() { if (confirm('Вы уверены, что хотите удалить все сообщения в этом чате? Это действие нельзя отменить.')) { const state = appData[appData.currentMode]; state.messages = []; renderAll(); saveState(); } }
     function handleSenderSelection() { const state = appData[appData.currentMode]; if (appData.currentMode === 'personal') { const newId = state.selectedParticipantId === 1 ? 2 : 1; selectParticipant(newId); } else { openParticipantsModal(); } }
     function updateSenderSelector(state) { const selected = state.participants.find(p => p.id === state.selectedParticipantId); senderSelectorBtn.textContent = selected ? selected.name : 'Выбрать'; }
     function selectParticipant(id) { const state = appData[appData.currentMode]; state.selectedParticipantId = id; updateSenderSelector(state); participantsModalOverlay.classList.remove('visible'); saveState(); }
     function openParticipantsModal() {
-        const state = appData.group;
-        participantsList.innerHTML = '';
+        const state = appData.group; participantsList.innerHTML = '';
         state.participants.forEach(p => {
             const li = document.createElement('li');
             if(p.id === state.selectedParticipantId) li.classList.add('active-sender');
