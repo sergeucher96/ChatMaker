@@ -15,13 +15,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const addParticipantModalBtn = document.getElementById('add-participant-modal-btn');
     const resetChatBtn = document.getElementById('reset-chat-btn');
     const setTimeBtn = document.getElementById('set-time-btn');
-    // Старые элементы предпросмотра больше не используются в этой логике
-    // const exportPreviewOverlay = document.getElementById('export-preview-overlay');
-    // const exportPreviewImg = document.getElementById('export-preview-img');
-
-    // Инициализируем Telegram Web App
-    const tg = window.Telegram.WebApp;
-    tg.ready();
+    const exportPreviewOverlay = document.getElementById('export-preview-overlay');
+    const exportPreviewImg = document.getElementById('export-preview-img');
+    const downloadPreviewBtn = document.getElementById('download-preview-btn');
+    const closePreviewBtn = document.getElementById('close-preview-btn');
 
     // --- Фиксация высоты для мобильных устройств ---
     function setFixedViewportHeight() {
@@ -31,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setFixedViewportHeight();
     window.addEventListener('resize', setFixedViewportHeight);
 
-    // --- Массивы с данными ---
+    // --- Данные ---
     const backgroundOptions = [
         { id: 'bg1', value: `url("1.jpg")` }, { id: 'bg2', value: `url("2.jpg")` },
         { id: 'bg3', value: `url("3.jpg")` }, { id: 'bg4', value: `url("4.jpg")` },
@@ -39,9 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 'bg7', value: `url("7.jpg")` }, { id: 'bg8', value: `url("8.jpg")` },
         { id: 'bg9', value: `url("9.jpg")` }, { id: 'bg10', value: `url("10.jpg")` }
     ];
-    const nameColors = ['#ca6052', '#3e95c5', '#5eb44f', '#d7894a', '#8c62a5', '#4e9b95', '#d4769a', '#cb823f'];
+    const nameColors = ['#ca6052', '#3e95c5', '#5eb44f', '#d7894a', '#8c62a5', '#4e9b95', '#d476a9', '#cb823f'];
     
-    // --- Структура состояния ---
+    // --- Состояние приложения ---
     let appData = {};
 
     function getInitialState() {
@@ -59,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appData = savedState ? JSON.parse(savedState) : getInitialState();
     }
 
+    // --- Рендеринг и основные функции (без изменений) ---
     function renderMessages(state) {
         chatScreen.innerHTML = ''; 
         state.messages.forEach(msg => {
@@ -106,7 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         chatScreen.scrollTop = chatScreen.scrollHeight;
     }
-    
     function sendMessage() {
         const text = messageInput.value.trim(); if (!text) return;
         const state = appData[appData.currentMode];
@@ -116,9 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messageInput.value = ''; messageInput.style.height = 'auto';
         renderMessages(state); saveState();
     }
-    
     function setTime() { const newTime = prompt('Введите время для следующих сообщений (например, 21:45):', appData.currentTime); if (newTime && newTime.match(/^\d{1,2}:\d{2}$/)) { appData.currentTime = newTime; saveState(); } else if (newTime) { alert('Неверный формат времени. Используйте ЧЧ:ММ.'); } }
-    
     function changeMessageStatus(id) {
         const state = appData[appData.currentMode];
         const message = state.messages.find(m => m.id === id); if (!message) return;
@@ -128,7 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
         message.status = statuses[nextIndex];
         renderMessages(state); saveState();
     }
-
     async function createFinalCanvas() {
         const finalCanvas = document.createElement('canvas');
         const ctx = finalCanvas.getContext('2d');
@@ -169,37 +163,45 @@ document.addEventListener('DOMContentLoaded', () => {
         return finalCanvas;
     }
     
-    let imageDataUrl = null;
-
-    function mainButtonClickHandler() {
-        if (imageDataUrl) {
-            tg.sendData(imageDataUrl);
-        }
-    }
-
-    async function prepareForExport() {
+    // ФИНАЛЬНАЯ РАБОЧАЯ ФУНКЦИЯ ЭКСПОРТА
+    async function exportChat() {
         const originalButtonText = exportBtn.textContent;
         exportBtn.disabled = true;
         exportBtn.textContent = 'Создание...';
-        
+
         try {
             const finalCanvas = await createFinalCanvas();
-            imageDataUrl = finalCanvas.toDataURL('image/jpeg', 0.85);
-
-            tg.MainButton.setText('Отправить картинку в чат');
-            tg.MainButton.show();
+            const testFile = new File([""], "test.png", {type: "image/png"});
             
-            tg.showAlert('Картинка готова! Нажмите "Отправить" внизу, чтобы получить ее в чате.');
-
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [testFile] })) {
+                finalCanvas.toBlob(async (blob) => {
+                    if (!blob) {
+                        alert("Не удалось создать изображение для отправки.");
+                        return;
+                    }
+                    const file = new File([blob], `chat-story.png`, { type: 'image/png' });
+                    try {
+                        await navigator.share({ title: 'Chat Story', files: [file] });
+                    } catch (err) {
+                        if (err.name !== 'AbortError') { console.error("Ошибка navigator.share:", err); }
+                    }
+                }, 'image/png');
+            } else {
+                const imageUrl = finalCanvas.toDataURL("image/png");
+                exportPreviewImg.src = imageUrl;
+                downloadPreviewBtn.href = imageUrl;
+                exportPreviewOverlay.classList.add('visible');
+            }
         } catch (err) {
             console.error("Ошибка при создании изображения:", err);
-            tg.showAlert('Произошла ошибка при создании изображения.');
+            alert("Произошла ошибка при создании изображения.");
         } finally {
             exportBtn.disabled = false;
             exportBtn.textContent = originalButtonText;
         }
     }
-    
+
+    // --- Остальные функции и обработчики (без изменений) ---
     function switchMode(newMode) { if (appData.currentMode === newMode) return; appData.currentMode = newMode; document.querySelectorAll('.mode-btn').forEach(btn => { btn.classList.toggle('active', btn.dataset.mode === newMode); }); renderAll(); saveState(); }
     function renderAll() { const state = appData[appData.currentMode]; renderMessages(state); updateSenderSelector(state); changeBackground(state.currentBackground, false); }
     function resetChat() { if (confirm('Вы уверены, что хотите удалить все сообщения в этом чате? Это действие нельзя отменить.')) { const state = appData[appData.currentMode]; state.messages = []; renderAll(); saveState(); } }
@@ -244,13 +246,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Обработчики событий ---
-    exportBtn.addEventListener('click', prepareForExport);
-    tg.onEvent('mainButtonClicked', mainButtonClickHandler);
-
     modeSwitcher.addEventListener('click', (e) => { if (e.target.classList.contains('mode-btn')) switchMode(e.target.dataset.mode); });
     sendBtn.addEventListener('click', sendMessage);
     messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }});
     messageInput.addEventListener('input', function () { this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; });
+    exportBtn.addEventListener('click', exportChat);
     senderSelectorBtn.addEventListener('click', handleSenderSelection);
     addParticipantModalBtn.addEventListener('click', addParticipant);
     closeParticipantsModalBtn.addEventListener('click', () => participantsModalOverlay.classList.remove('visible'));
@@ -271,9 +271,15 @@ document.addEventListener('DOMContentLoaded', () => {
             colorPalette.classList.remove('visible');
         }
     });
-    
+    closePreviewBtn.addEventListener('click', () => { exportPreviewOverlay.classList.remove('visible'); });
+    exportPreviewOverlay.addEventListener('click', (e) => { if (e.target === exportPreviewOverlay) { exportPreviewOverlay.classList.remove('visible'); } });
+
+
     // --- ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ---
     loadState();
     renderColorPalette();
     switchMode(appData.currentMode);
+    if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.ready();
+    }
 });
