@@ -18,22 +18,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportPreviewOverlay = document.getElementById('export-preview-overlay');
     const exportPreviewImg = document.getElementById('export-preview-img');
 
-    // --- Фиксация высоты для мобильных устройств ---
+    // --- ИЗМЕНЕНО: Фиксация высоты для мобильных устройств ---
     function setFixedViewportHeight() {
+        // Устанавливаем высоту контейнера равной высоте окна минус отступы body (15px * 2)
         const vh = window.innerHeight;
-        document.documentElement.style.setProperty('--vh', `${vh}px`);
         appContainer.style.height = `${vh - 30}px`;
     }
+    // Вызываем сразу
     setFixedViewportHeight();
-    window.addEventListener('orientationchange', setFixedViewportHeight);
+    // И вешаем обработчик на изменение размера (например, поворот экрана)
+    window.addEventListener('resize', setFixedViewportHeight);
+
 
     // --- Массив с локальными фонами ---
     const backgroundOptions = [
-        { id: 'bg1', value: `url("1.jpg")` }, { id: 'bg2', value: `url("2.jpg")` },
-        { id: 'bg3', value: `url("3.jpg")` }, { id: 'bg4', value: `url("4.jpg")` },
-        { id: 'bg5', value: `url("5.jpg")` }, { id: 'bg6', value: `url("6.jpg")` },
-        { id: 'bg7', value: `url("7.jpg")` }, { id: 'bg8', value: `url("8.jpg")` },
-        { id: 'bg9', value: `url("9.jpg")` }, { id: 'bg10', value: `url("10.jpg")` }
+        { id: 'bg1', value: `url("1.jpeg")` }, { id: 'bg2', value: `url("2.jpeg")` },
+        { id: 'bg3', value: `url("3.jpeg")` }, { id: 'bg4', value: `url("4.jpeg")` },
+        { id: 'bg5', value: `url("5.jpeg")` }, { id: 'bg6', value: `url("6.jpeg")` },
+        { id: 'bg7', value: `url("7.jpeg")` }, { id: 'bg8', value: `url("8.jpeg")` },
+        { id: 'bg9', value: `url("9.jpeg")` }, { id: 'bg10', value: `url("10.jpeg")` }
     ];
     const nameColors = ['#ca6052', '#3e95c5', '#5eb44f', '#d7894a', '#8c62a5', '#4e9b95', '#d4769a', '#cb823f'];
     
@@ -49,9 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
     
-    function saveState() { localStorage.setItem('chatStoryState_mobile_final', JSON.stringify(appData)); }
+    function saveState() { localStorage.setItem('chatStoryState_final_keyboard_fix', JSON.stringify(appData)); }
     function loadState() {
-        const savedState = localStorage.getItem('chatStoryState_mobile_final');
+        const savedState = localStorage.getItem('chatStoryState_final_keyboard_fix');
         appData = savedState ? JSON.parse(savedState) : getInitialState();
     }
 
