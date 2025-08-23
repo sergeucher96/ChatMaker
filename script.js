@@ -17,6 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const setTimeBtn = document.getElementById('set-time-btn');
     const exportPreviewOverlay = document.getElementById('export-preview-overlay');
     const exportPreviewImg = document.getElementById('export-preview-img');
+    const downloadPreviewBtn = document.getElementById('download-preview-btn');
+    const closePreviewBtn = document.getElementById('close-preview-btn');
 
     // --- Фиксация высоты для мобильных устройств ---
     function setFixedViewportHeight() {
@@ -164,7 +166,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return finalCanvas;
     }
     
-    // ФИНАЛЬНАЯ, РАБОЧАЯ ВЕРСИЯ ФУНКЦИИ ЭКСПОРТА
     async function exportChat() {
         const originalButtonText = exportBtn.textContent;
         exportBtn.disabled = true;
@@ -172,40 +173,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const finalCanvas = await createFinalCanvas();
-            
             const testFile = new File([""], "test.png", {type: "image/png"});
             
-            // Проверяем, поддерживается ли Web Share API для файлов.
-            // Это стандартный способ вызова окна "Поделиться" на телефоне.
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [testFile] })) {
-                
                 finalCanvas.toBlob(async (blob) => {
                     if (!blob) {
                         alert("Не удалось создать изображение для отправки.");
-                        exportBtn.disabled = false;
-                        exportBtn.textContent = originalButtonText;
                         return;
                     }
                     const file = new File([blob], `chat-story.png`, { type: 'image/png' });
                     try {
-                        // Эта команда откроет системное окно "Поделиться"
-                        // Внутри Telegram на телефоне это будет окно "Переслать"
-                        await navigator.share({
-                            title: 'Chat Story',
-                            files: [file]
-                        });
+                        await navigator.share({ title: 'Chat Story', files: [file] });
                     } catch (err) {
-                        // Ошибка возникает, если пользователь сам закрыл окно "Поделиться".
-                        // Это нормальное поведение, можно ничего не делать.
-                        if (err.name !== 'AbortError') {
-                            console.error("Ошибка при вызове navigator.share:", err);
-                        }
+                        if (err.name !== 'AbortError') { console.error("Ошибка navigator.share:", err); }
                     }
                 }, 'image/png');
             } else {
-                // Если `navigator.share` не поддерживается (например, на ПК в Telegram Desktop)
-                // показываем картинку для ручного сохранения.
-                exportPreviewImg.src = finalCanvas.toDataURL("image/png");
+                const imageUrl = finalCanvas.toDataURL("image/png");
+                exportPreviewImg.src = imageUrl;
+                downloadPreviewBtn.href = imageUrl;
                 exportPreviewOverlay.classList.add('visible');
             }
         } catch (err) {
@@ -271,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
     senderSelectorBtn.addEventListener('click', handleSenderSelection);
     addParticipantModalBtn.addEventListener('click', addParticipant);
     closeParticipantsModalBtn.addEventListener('click', () => participantsModalOverlay.classList.remove('visible'));
-    participantsModalOverlay.addEventListener('click', (e) => { if (e.target === participantsModalOverlay) participantsModalOverlay.classList.remove('visible'); });
+    participantsModalOverlay.addEventListener('click', (e) => { if (e.target === exportPreviewOverlay) exportPreviewOverlay.classList.remove('visible'); });
     participantsList.addEventListener('click', (e) => { const targetLi = e.target.closest('li'); if (!targetLi) return; const editBtn = e.target.closest('.edit-btn'); const deleteBtn = e.target.closest('.delete-btn'); if (editBtn) { editParticipantName(parseInt(editBtn.dataset.id)); } else if (deleteBtn) { deleteParticipant(parseInt(deleteBtn.dataset.id)); } else { selectParticipant(parseInt(targetLi.dataset.id)); } });
     changeBgBtn.addEventListener('click', () => colorPalette.classList.toggle('visible'));
     colorPalette.addEventListener('click', (e) => { if (e.target.classList.contains('color-swatch')) changeBackground(e.target.dataset.bg); });
@@ -284,17 +270,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     document.addEventListener('click', (e) => {
-        if (
-            colorPalette.classList.contains('visible') &&
-            !changeBgBtn.contains(e.target) &&
-            !colorPalette.contains(e.target)
-        ) {
+        if ( colorPalette.classList.contains('visible') && !changeBgBtn.contains(e.target) && !colorPalette.contains(e.target) ) {
             colorPalette.classList.remove('visible');
         }
     });
-    exportPreviewOverlay.addEventListener('click', () => {
-        exportPreviewOverlay.classList.remove('visible');
-    });
+    
+    // Закрытие окна предпросмотра
+    closePreviewBtn.addEventListener('click', () => { exportPreviewOverlay.classList.remove('visible'); });
+    exportPreviewOverlay.addEventListener('click', (e) => { if (e.target === exportPreviewOverlay) { exportPreviewOverlay.classList.remove('visible'); } });
+
 
     // --- ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ---
     loadState();
