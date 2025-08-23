@@ -17,8 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const setTimeBtn = document.getElementById('set-time-btn');
     const exportPreviewOverlay = document.getElementById('export-preview-overlay');
     const exportPreviewImg = document.getElementById('export-preview-img');
-    const downloadPreviewBtn = document.getElementById('download-preview-btn');
-    const closePreviewBtn = document.getElementById('close-preview-btn');
 
     // --- Фиксация высоты для мобильных устройств ---
     function setFixedViewportHeight() {
@@ -29,14 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', setFixedViewportHeight);
 
     // --- Данные ---
-    const backgroundOptions = [
-        { id: 'bg1', value: `url("1.jpg")` }, { id: 'bg2', value: `url("2.jpg")` },
-        { id: 'bg3', value: `url("3.jpg")` }, { id: 'bg4', value: `url("4.jpg")` },
-        { id: 'bg5', value: `url("5.jpg")` }, { id: 'bg6', value: `url("6.jpg")` },
-        { id: 'bg7', value: `url("7.jpg")` }, { id: 'bg8', value: `url("8.jpg")` },
-        { id: 'bg9', value: `url("9.jpg")` }, { id: 'bg10', value: `url("10.jpg")` }
-    ];
-    const nameColors = ['#ca6052', '#3e95c5', '#5eb44f', '#d7894a', '#8c62a5', '#4e9b95', '#d476a9', '#cb823f'];
+    const backgroundOptions = [ { id: 'bg1', value: `url("1.jpg")` }, { id: 'bg2', value: `url("2.jpg")` }, { id: 'bg3', value: `url("3.jpg")` }, { id: 'bg4', value: `url("4.jpg")` }, { id: 'bg5', value: `url("5.jpg")` }, { id: 'bg6', value: `url("6.jpg")` }, { id: 'bg7', value: `url("7.jpg")` }, { id: 'bg8', value: `url("8.jpg")` }, { id: 'bg9', value: `url("9.jpg")` }, { id: 'bg10', value: `url("10.jpg")` } ];
+    const nameColors = ['#ca6052', '#3e95c5', '#5eb44f', '#d7894a', '#8c62a5', '#4e9b95', '#d4769a', '#cb823f'];
     
     // --- Состояние приложения ---
     let appData = {};
@@ -56,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appData = savedState ? JSON.parse(savedState) : getInitialState();
     }
 
-    // --- Рендеринг и основные функции (без изменений) ---
+    // --- Рендеринг и основные функции ---
     function renderMessages(state) {
         chatScreen.innerHTML = ''; 
         state.messages.forEach(msg => {
@@ -104,6 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         chatScreen.scrollTop = chatScreen.scrollHeight;
     }
+
     function sendMessage() {
         const text = messageInput.value.trim(); if (!text) return;
         const state = appData[appData.currentMode];
@@ -113,16 +106,29 @@ document.addEventListener('DOMContentLoaded', () => {
         messageInput.value = ''; messageInput.style.height = 'auto';
         renderMessages(state); saveState();
     }
-    function setTime() { const newTime = prompt('Введите время для следующих сообщений (например, 21:45):', appData.currentTime); if (newTime && newTime.match(/^\d{1,2}:\d{2}$/)) { appData.currentTime = newTime; saveState(); } else if (newTime) { alert('Неверный формат времени. Используйте ЧЧ:ММ.'); } }
+
+    function setTime() {
+        const newTime = prompt('Введите время для следующих сообщений (например, 21:45):', appData.currentTime);
+        if (newTime && newTime.match(/^\d{1,2}:\d{2}$/)) {
+            appData.currentTime = newTime;
+            saveState();
+        } else if (newTime) {
+            alert('Неверный формат времени. Используйте ЧЧ:ММ.');
+        }
+    }
+
     function changeMessageStatus(id) {
         const state = appData[appData.currentMode];
-        const message = state.messages.find(m => m.id === id); if (!message) return;
+        const message = state.messages.find(m => m.id === id);
+        if (!message) return;
         const statuses = ['delivered', 'read', 'sent', 'none'];
         const currentIndex = statuses.indexOf(message.status);
         const nextIndex = (currentIndex + 1) % statuses.length;
         message.status = statuses[nextIndex];
-        renderMessages(state); saveState();
+        renderMessages(state);
+        saveState();
     }
+
     async function createFinalCanvas() {
         const finalCanvas = document.createElement('canvas');
         const ctx = finalCanvas.getContext('2d');
@@ -130,22 +136,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const exportHeight = 1920;
         finalCanvas.width = exportWidth;
         finalCanvas.height = exportHeight;
+
         const state = appData[appData.currentMode];
         const bgValue = state.currentBackground;
         const urlMatch = bgValue.match(/url\("(.+?)"\)/);
+
         if (urlMatch) {
             const img = new Image();
             img.src = urlMatch[1];
             await new Promise(resolve => { img.onload = resolve; });
             ctx.drawImage(img, 0, 0, exportWidth, exportHeight);
         }
+
         const messageElements = Array.from(chatScreen.querySelectorAll('.message-wrapper'));
         const messageCanvases = await Promise.all(messageElements.map(el =>
             html2canvas(el, { scale: 3, backgroundColor: null, useCORS: true })
         ));
+
         let currentY = 60;
         const sidePadding = 45;
         const messageGap = 6;
+        
         for (let i = 0; i < messageCanvases.length; i++) {
             const msgCanvas = messageCanvases[i];
             const el = messageElements[i];
@@ -156,14 +167,16 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.drawImage(msgCanvas, xPosition, currentY);
             currentY += msgCanvas.height + messageGap;
         }
+        
         ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
         ctx.font = 'bold 32px -apple-system, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('by Chat Story Maker', exportWidth / 2, exportHeight - 60);
+
         return finalCanvas;
     }
     
-    // ФИНАЛЬНАЯ РАБОЧАЯ ФУНКЦИЯ ЭКСПОРТА
+    // ФИНАЛЬНАЯ, УПРОЩЕННАЯ И РАБОЧАЯ ФУНКЦИЯ ЭКСПОРТА
     async function exportChat() {
         const originalButtonText = exportBtn.textContent;
         exportBtn.disabled = true;
@@ -171,27 +184,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const finalCanvas = await createFinalCanvas();
-            const testFile = new File([""], "test.png", {type: "image/png"});
+            const imageUrl = finalCanvas.toDataURL("image/png");
             
-            if (navigator.share && navigator.canShare && navigator.canShare({ files: [testFile] })) {
-                finalCanvas.toBlob(async (blob) => {
-                    if (!blob) {
-                        alert("Не удалось создать изображение для отправки.");
-                        return;
-                    }
-                    const file = new File([blob], `chat-story.png`, { type: 'image/png' });
-                    try {
-                        await navigator.share({ title: 'Chat Story', files: [file] });
-                    } catch (err) {
-                        if (err.name !== 'AbortError') { console.error("Ошибка navigator.share:", err); }
-                    }
-                }, 'image/png');
-            } else {
-                const imageUrl = finalCanvas.toDataURL("image/png");
-                exportPreviewImg.src = imageUrl;
-                downloadPreviewBtn.href = imageUrl;
-                exportPreviewOverlay.classList.add('visible');
-            }
+            // Помещаем картинку в оверлей и показываем его
+            exportPreviewImg.src = imageUrl;
+            exportPreviewOverlay.classList.add('visible');
+
         } catch (err) {
             console.error("Ошибка при создании изображения:", err);
             alert("Произошла ошибка при создании изображения.");
@@ -201,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Остальные функции и обработчики (без изменений) ---
+    // --- Остальные функции и обработчики ---
     function switchMode(newMode) { if (appData.currentMode === newMode) return; appData.currentMode = newMode; document.querySelectorAll('.mode-btn').forEach(btn => { btn.classList.toggle('active', btn.dataset.mode === newMode); }); renderAll(); saveState(); }
     function renderAll() { const state = appData[appData.currentMode]; renderMessages(state); updateSenderSelector(state); changeBackground(state.currentBackground, false); }
     function resetChat() { if (confirm('Вы уверены, что хотите удалить все сообщения в этом чате? Это действие нельзя отменить.')) { const state = appData[appData.currentMode]; state.messages = []; renderAll(); saveState(); } }
@@ -271,15 +269,13 @@ document.addEventListener('DOMContentLoaded', () => {
             colorPalette.classList.remove('visible');
         }
     });
-    closePreviewBtn.addEventListener('click', () => { exportPreviewOverlay.classList.remove('visible'); });
-    exportPreviewOverlay.addEventListener('click', (e) => { if (e.target === exportPreviewOverlay) { exportPreviewOverlay.classList.remove('visible'); } });
-
+    
+    exportPreviewOverlay.addEventListener('click', () => {
+        exportPreviewOverlay.classList.remove('visible');
+    });
 
     // --- ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ---
     loadState();
     renderColorPalette();
     switchMode(appData.currentMode);
-    if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.ready();
-    }
 });
