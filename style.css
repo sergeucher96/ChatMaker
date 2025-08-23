@@ -188,20 +188,20 @@ body {
 .add-participant-modal-btn { width: 100%; padding: 12px; background-color: var(--accent-color); color: white; font-weight: 700; font-size: 16px; border: none; border-radius: 12px; cursor: pointer; transition: background-color 0.2s ease; }
 .add-participant-modal-btn:hover { background-color: #2972c4; }
 
-/* ИСПРАВЛЕННЫЕ СТИЛИ ДЛЯ ПОЛНОЭКРАННОГО ПРОСМОТРА */
+/* Стили для полноэкранного просмотра */
 .export-preview-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: #000; /* Чистый черный фон */
+    background-color: #000;
     display: none;
     justify-content: center;
     align-items: center;
     z-index: 2000;
     cursor: pointer;
-    padding: 0; /* Убираем все отступы */
+    padding: 0;
 }
 .export-preview-overlay.visible {
     display: flex;
@@ -209,7 +209,7 @@ body {
 #export-preview-img {
     width: 100%;
     height: 100%;
-    object-fit: contain; /* Сохраняет пропорции, вписывая в экран */
-    border-radius: 0; /* Убираем скругление углов */
-    box-shadow: none; /* Убираем тень */
+    object-fit: contain;
+    border-radius: 0;
+    box-shadow: none;
 }
