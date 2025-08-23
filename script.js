@@ -164,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return finalCanvas;
     }
     
+    // ФИНАЛЬНАЯ, РАБОЧАЯ ВЕРСИЯ ФУНКЦИИ ЭКСПОРТА
     async function exportChat() {
         const originalButtonText = exportBtn.textContent;
         exportBtn.disabled = true;
@@ -173,9 +174,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const finalCanvas = await createFinalCanvas();
             
             const testFile = new File([""], "test.png", {type: "image/png"});
-            // Проверяем, поддерживается ли Web Share API для файлов
+            
+            // Проверяем, поддерживается ли Web Share API для файлов.
+            // Это стандартный способ вызова окна "Поделиться" на телефоне.
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [testFile] })) {
-                // Конвертируем Canvas в Blob для отправки
+                
                 finalCanvas.toBlob(async (blob) => {
                     if (!blob) {
                         alert("Не удалось создать изображение для отправки.");
@@ -185,21 +188,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     const file = new File([blob], `chat-story.png`, { type: 'image/png' });
                     try {
-                        // Вызываем нативное окно "Поделиться"
+                        // Эта команда откроет системное окно "Поделиться"
+                        // Внутри Telegram на телефоне это будет окно "Переслать"
                         await navigator.share({
                             title: 'Chat Story',
                             files: [file]
                         });
                     } catch (err) {
+                        // Ошибка возникает, если пользователь сам закрыл окно "Поделиться".
+                        // Это нормальное поведение, можно ничего не делать.
                         if (err.name !== 'AbortError') {
                             console.error("Ошибка при вызове navigator.share:", err);
                         }
-                        // Если пользователь отменил, ничего страшного. Можно ничего не делать или показать превью.
                     }
                 }, 'image/png');
             } else {
-                // Если Web Share API не поддерживается (например, на ПК в браузере)
-                // показываем превью для ручного сохранения.
+                // Если `navigator.share` не поддерживается (например, на ПК в Telegram Desktop)
+                // показываем картинку для ручного сохранения.
                 exportPreviewImg.src = finalCanvas.toDataURL("image/png");
                 exportPreviewOverlay.classList.add('visible');
             }
