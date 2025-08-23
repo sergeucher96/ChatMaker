@@ -171,64 +171,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const finalCanvas = await createFinalCanvas();
-            exportBtn.textContent = 'Загрузка...';
-
-            finalCanvas.toBlob(async (blob) => {
-                if (!blob) {
-                    alert("Ошибка: не удалось создать изображение.");
-                    exportBtn.disabled = false;
-                    exportBtn.textContent = originalButtonText;
-                    return;
-                }
-
-                const formData = new FormData();
-                formData.append('file', blob, 'chat-story.png');
-
-                try {
-                    const proxyUrl = 'https://corsproxy.io/?';
-                    const targetUrl = 'https://telegra.ph/upload';
-
-                    const response = await fetch(proxyUrl + encodeURIComponent(targetUrl), {
-                        method: 'POST',
-                        body: formData,
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        console.error('Ошибка ответа от прокси-сервера:', errorText);
-                        throw new Error(`Ошибка сети: ${response.status}. Прокси-сервер вернул ошибку.`);
+            
+            const testFile = new File([""], "test.png", {type: "image/png"});
+            // Проверяем, поддерживается ли Web Share API для файлов
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [testFile] })) {
+                // Конвертируем Canvas в Blob для отправки
+                finalCanvas.toBlob(async (blob) => {
+                    if (!blob) {
+                        alert("Не удалось создать изображение для отправки.");
+                        exportBtn.disabled = false;
+                        exportBtn.textContent = originalButtonText;
+                        return;
                     }
-                    
-                    const result = await response.json();
-
-                    if (result.error) { throw new Error(result.error); }
-                    if (!result[0] || !result[0].src) { throw new Error('Некорректный ответ от сервера telegra.ph.'); }
-
-                    const imageUrl = 'https://telegra.ph' + result[0].src;
-                    const shareText = encodeURIComponent("Смотри, какую историю я создал!");
-                    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(imageUrl)}&text=${shareText}`;
-
-                    if (window.Telegram && window.Telegram.WebApp) {
-                        window.Telegram.WebApp.openTelegramLink(shareUrl);
-                    } else {
-                        console.log("Тестовый запуск в браузере. Ссылка для 'Поделиться':", shareUrl);
-                        window.open(shareUrl, '_blank');
+                    const file = new File([blob], `chat-story.png`, { type: 'image/png' });
+                    try {
+                        // Вызываем нативное окно "Поделиться"
+                        await navigator.share({
+                            title: 'Chat Story',
+                            files: [file]
+                        });
+                    } catch (err) {
+                        if (err.name !== 'AbortError') {
+                            console.error("Ошибка при вызове navigator.share:", err);
+                        }
+                        // Если пользователь отменил, ничего страшного. Можно ничего не делать или показать превью.
                     }
-
-                } catch (uploadError) {
-                    console.error("Детальная ошибка при загрузке:", uploadError);
-                    alert(`Не удалось загрузить изображение для отправки. ${uploadError.message}`);
-                    exportPreviewImg.src = finalCanvas.toDataURL("image/png");
-                    exportPreviewOverlay.classList.add('visible');
-                } finally {
-                    exportBtn.disabled = false;
-                    exportBtn.textContent = originalButtonText;
-                }
-            }, 'image/png');
-
+                }, 'image/png');
+            } else {
+                // Если Web Share API не поддерживается (например, на ПК в браузере)
+                // показываем превью для ручного сохранения.
+                exportPreviewImg.src = finalCanvas.toDataURL("image/png");
+                exportPreviewOverlay.classList.add('visible');
+            }
         } catch (err) {
             console.error("Ошибка при создании изображения:", err);
             alert("Произошла ошибка при создании изображения.");
+        } finally {
             exportBtn.disabled = false;
             exportBtn.textContent = originalButtonText;
         }
