@@ -18,17 +18,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportPreviewOverlay = document.getElementById('export-preview-overlay');
     const exportPreviewImg = document.getElementById('export-preview-img');
 
-    // --- ИЗМЕНЕНО: Фиксация высоты для мобильных устройств ---
+    // --- Фиксация высоты для мобильных устройств ---
     function setFixedViewportHeight() {
-        // Устанавливаем высоту контейнера равной высоте окна минус отступы body (15px * 2)
         const vh = window.innerHeight;
         appContainer.style.height = `${vh - 30}px`;
     }
-    // Вызываем сразу
     setFixedViewportHeight();
-    // И вешаем обработчик на изменение размера (например, поворот экрана)
     window.addEventListener('resize', setFixedViewportHeight);
-
 
     // --- Массив с локальными фонами ---
     const backgroundOptions = [
@@ -52,9 +48,9 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
     
-    function saveState() { localStorage.setItem('chatStoryState_final_keyboard_fix', JSON.stringify(appData)); }
+    function saveState() { localStorage.setItem('chatStoryState_mobile_final', JSON.stringify(appData)); }
     function loadState() {
-        const savedState = localStorage.getItem('chatStoryState_final_keyboard_fix');
+        const savedState = localStorage.getItem('chatStoryState_mobile_final');
         appData = savedState ? JSON.parse(savedState) : getInitialState();
     }
 
