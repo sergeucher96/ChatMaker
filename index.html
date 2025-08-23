@@ -13,7 +13,6 @@
 <body>
 
     <div class="app-container" id="app-container">
-        <!-- ... (весь код до модального окна без изменений) ... -->
         <div class="top-bar">
             <div class="mode-switcher" id="mode-switcher">
                 <button class="mode-btn active" data-mode="personal">👤 Личный</button>
@@ -39,7 +38,7 @@
 
         <div class="export-controls">
             <button class="reset-chat-btn" id="reset-chat-btn">🗑️ Сбросить чат</button>
-            <button id="export-btn">Поделиться историей</button>
+            <button id="export-btn">Создать картинку для скриншота</button>
         </div>
     </div>
     
@@ -57,16 +56,8 @@
         </div>
     </div>
 
-    <!-- ОБНОВЛЕННЫЙ БЛОК: Оверлей для предпросмотра -->
     <div class="export-preview-overlay" id="export-preview-overlay">
-        <div class="export-preview-content">
-            <img id="export-preview-img" src="" alt="Предпросмотр">
-            <div class="export-preview-actions">
-                <p>Предпросмотр (для ПК)</p>
-                <a href="#" id="download-preview-btn" class="download-btn" download="chat-story.png">Скачать картинку</a>
-                <button id="close-preview-btn" class="close-preview-btn">Закрыть</button>
-            </div>
-        </div>
+        <img id="export-preview-img" src="" alt="Готовое изображение">
     </div>
 
     <script src="script.js"></script>
