@@ -49,39 +49,12 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
     
-    function saveState() { localStorage.setItem('chatStoryState_final_final_working', JSON.stringify(appData)); }
+    function saveState() { localStorage.setItem('chatStoryState_mobile_final', JSON.stringify(appData)); }
     function loadState() {
-        const savedState = localStorage.getItem('chatStoryState_final_final_working');
+        const savedState = localStorage.getItem('chatStoryState_mobile_final');
         appData = savedState ? JSON.parse(savedState) : getInitialState();
     }
 
-    function switchMode(newMode) {
-        if (appData.currentMode === newMode) return;
-        appData.currentMode = newMode;
-        
-        document.querySelectorAll('.mode-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.mode === newMode);
-        });
-        renderAll();
-        saveState();
-    }
-    
-    function renderAll() {
-        const state = appData[appData.currentMode];
-        renderMessages(state);
-        updateSenderSelector(state);
-        changeBackground(state.currentBackground, false);
-        // ИЗМЕНЕНО: Возвращаем эту важную строчку
-        updateUIForMode(); 
-    }
-
-    function updateUIForMode() {
-        // Эта функция теперь будет вызываться и все будет работать
-        const isGroup = appData.currentMode === 'group';
-        // Тут можно будет вернуть кнопку "Участники", если понадобится
-        // manageParticipantsBtn.style.display = isGroup ? 'block' : 'none';
-    }
-    
     function renderMessages(state) {
         chatScreen.innerHTML = ''; 
         state.messages.forEach(msg => {
@@ -153,7 +126,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function createFinalCanvas() {
-        // ... (код этой функции без изменений)
         const finalCanvas = document.createElement('canvas');
         const ctx = finalCanvas.getContext('2d');
         const exportWidth = 1080;
@@ -237,6 +209,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function switchMode(newMode) { if (appData.currentMode === newMode) return; appData.currentMode = newMode; document.querySelectorAll('.mode-btn').forEach(btn => { btn.classList.toggle('active', btn.dataset.mode === newMode); }); renderAll(); saveState(); }
+    function renderAll() { const state = appData[appData.currentMode]; renderMessages(state); updateSenderSelector(state); changeBackground(state.currentBackground, false); }
     function resetChat() { if (confirm('Вы уверены, что хотите удалить все сообщения в этом чате? Это действие нельзя отменить.')) { const state = appData[appData.currentMode]; state.messages = []; renderAll(); saveState(); } }
     function handleSenderSelection() { const state = appData[appData.currentMode]; if (appData.currentMode === 'personal') { const newId = state.selectedParticipantId === 1 ? 2 : 1; selectParticipant(newId); } else { openParticipantsModal(); } }
     function updateSenderSelector(state) { const selected = state.participants.find(p => p.id === state.selectedParticipantId); senderSelectorBtn.textContent = selected ? selected.name : 'Выбрать'; }
