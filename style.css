@@ -188,3 +188,35 @@ body {
 .modal-footer { padding: 15px 20px; border-top: 1px solid var(--border-color); }
 .add-participant-modal-btn { width: 100%; padding: 12px; background-color: var(--accent-color); color: white; font-weight: 700; font-size: 16px; border: none; border-radius: 12px; cursor: pointer; transition: background-color 0.2s ease; }
 .add-participant-modal-btn:hover { background-color: #2972c4; }
+/* ... (все стили до конца остаются без изменений) ... */
+
+/* НОВЫЙ БЛОК: Стили для оверлея предпросмотра */
+.export-preview-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(5px);
+    display: none; /* Скрыт по умолчанию */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    cursor: pointer;
+}
+.export-preview-overlay.visible {
+    display: flex; /* Показываем через JS */
+}
+#export-preview-img {
+    max-width: 90%;
+    max-height: 75%;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.export-preview-text {
+    color: white;
+    font-weight: 500;
+    margin-top: 20px;
+    padding: 0 20px;
+    text-align: center;
+}
