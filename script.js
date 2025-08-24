@@ -1,20 +1,25 @@
 // --- ИНТЕГРАЦИЯ С TELEGRAM (выполняется до загрузки DOM) ---
 if (window.Telegram && window.Telegram.WebApp) {
     const tg = window.Telegram.WebApp;
+    
+    // 1. Сообщаем, что приложение готово
     tg.ready();
+
+    // 2. Запрашиваем расширение на весь доступный экран
     tg.expand();
     
-    // Устанавливаем цвет верхней панели равным цвету фона приложения
+    // 3. САМАЯ ГЛАВНАЯ КОМАНДА: Делаем верхнюю рамку Telegram такого же цвета, как фон нашего приложения
     tg.setHeaderColor('bg_color');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     
-    // Адаптация под тему Telegram
+    // Адаптация под тему Telegram (чтобы фон совпадал с рамкой)
     if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
         function applyTheme() {
             document.documentElement.className = tg.colorScheme === 'dark' ? 'dark-mode' : '';
+            // Устанавливаем цвет фона body из переменных темы Telegram
             document.body.style.backgroundColor = tg.themeParams.bg_color;
         }
         tg.onEvent('themeChanged', applyTheme);
