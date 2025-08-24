@@ -5,42 +5,35 @@ from aiogram.filters import CommandStart
 from aiogram.types import MenuButtonWebApp, WebAppInfo
 
 # --- НАСТРОЙКИ ---
-# Возьми токен своего бота из @BotFather
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+BOT_TOKEN = os.getenv("BOT_TOKEN") 
+WEB_APP_URL = "https://sergeucher96.github.io/ChatMaker/" # Убедись, что ссылка правильная!
 
-# Вставь сюда ПОЛНУЮ ссылку на твой опубликованный сайт на GitHub Pages
-WEB_APP_URL = "https://sergeucher96.github.io/ChatMaker/" # <--- ВАША ССЫЛКА ЗДЕСЬ
-
-# --- КОД БОТА (не трогай его) ---
+# --- КОД БОТА ---
 dp = Dispatcher()
 bot = Bot(BOT_TOKEN)
 
 @dp.message(CommandStart())
 async def command_start_handler(message: types.Message):
-    """
-    Этот обработчик будет срабатывать, когда пользователь напишет /start
-    """
-    # Устанавливаем специальную кнопку "Меню" для этого пользователя
     await bot.set_chat_menu_button(
         chat_id=message.chat.id,
         menu_button=MenuButtonWebApp(
-            text="Создать Историю", # Текст, который будет на кнопке
-            web_app=WebAppInfo(url=WEB_APP_URL)
+            text="Создать Историю",
+            web_app=WebAppInfo(
+                url=WEB_APP_URL,
+                request_write_access=True # Добавили этот параметр
+            )
         )
     )
-    
-    # Отправляем приветственное сообщение
     await message.answer(
         "Привет! Я бот для создания чат-историй.\n\n"
         "Чтобы запустить редактор, нажми на кнопку 'Создать Историю' в меню 👇"
     )
 
 async def main():
-    """Главная функция для запуска бота"""
     print("Бот запущен...")
+    # Важно: удаляем старые вебхуки перед запуском, чтобы избежать конфликтов
+    await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
-
     asyncio.run(main())
-
