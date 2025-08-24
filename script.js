@@ -1,7 +1,11 @@
 // --- ИНТЕГРАЦИЯ С TELEGRAM (выполняется до загрузки DOM) ---
 if (window.Telegram && window.Telegram.WebApp) {
-    window.Telegram.WebApp.ready();
-    window.Telegram.WebApp.expand();
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+    
+    // Устанавливаем цвет верхней панели равным цвету фона приложения
+    tg.setHeaderColor('bg_color');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -11,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tg = window.Telegram.WebApp;
         function applyTheme() {
             document.documentElement.className = tg.colorScheme === 'dark' ? 'dark-mode' : '';
+            document.body.style.backgroundColor = tg.themeParams.bg_color;
         }
         tg.onEvent('themeChanged', applyTheme);
         applyTheme();
@@ -40,7 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
         appContainer.style.height = `${window.innerHeight}px`;
     }
     window.addEventListener('resize', setFixedViewportHeight);
-    setFixedViewportHeight(); // Вызываем сразу
 
     // --- Данные ---
     const backgroundOptions = [ { id: 'bg1', value: `url("1.jpg")` }, { id: 'bg2', value: `url("2.jpg")` }, { id: 'bg3', value: `url("3.jpg")` }, { id: 'bg4', value: `url("4.jpg")` }, { id: 'bg5', value: `url("5.jpg")` }, { id: 'bg6', value: `url("6.jpg")` }, { id: 'bg7', value: `url("7.jpg")` }, { id: 'bg8', value: `url("8.jpg")` }, { id: 'bg9', value: `url("9.jpg")` }, { id: 'bg10', value: `url("10.jpg")` } ];
@@ -283,4 +287,5 @@ document.addEventListener('DOMContentLoaded', () => {
     loadState();
     renderColorPalette();
     switchMode(appData.currentMode);
+    setFixedViewportHeight();
 });
