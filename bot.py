@@ -6,18 +6,18 @@ import hashlib
 from urllib.parse import parse_qsl
 
 from aiohttp import web
+import aiohttp_cors # <-- Импортируем новую библиотеку
 from aiogram import Bot, Dispatcher, types
 
 # --- НАСТРОЙКИ ---
-BOT_TOKEN = os.getenv("BOT_TOKEN", "СЮДА_ВСТАВЬ_СВОЙ_ТОКЕН_ЕСЛИ_ТЕСТИРУЕШЬ_ЛОКАЛЬНО")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEB_SERVER_HOST = "0.0.0.0"
-WEB_SERVER_PORT = int(os.getenv("PORT", 8080)) # Render сам подставит нужный порт
+WEB_SERVER_PORT = int(os.getenv("PORT", 8080))
 
 # --- КОД БОТА ---
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher()
 app = web.Application()
-
 
 def validate_init_data(init_data: str, bot_token: str) -> (bool, dict):
     """Проверяет подлинность данных от Telegram"""
@@ -68,28 +68,30 @@ async def upload_photo_handler(request: web.Request):
         print(f"Ошибка на сервере при загрузке: {e}")
         return web.json_response({'error': 'Внутренняя ошибка сервера.'}, status=500)
 
-async def on_startup(app):
-    """Действия при старте сервера"""
-    # Устанавливаем вебхук (необязательно для этой задачи, но хорошая практика)
-    # webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{BOT_TOKEN}"
-    # await bot.set_webhook(webhook_url)
-    print("Веб-сервер запущен...")
-
 async def main():
     """Главная функция для запуска"""
-    # Добавляем обработчик для POST запросов на /upload
-    app.router.add_post('/upload', upload_photo_handler)
-    app.on_startup.append(on_startup)
+    # --- НАСТРОЙКА CORS ---
+    # Разрешаем всем (*) доменам отправлять запросы. Для простоты это лучший вариант.
+    cors = aiohttp_cors.setup(app, defaults={
+        "*": aiohttp_cors.ResourceOptions(
+                allow_credentials=True,
+                expose_headers="*",
+                allow_headers="*",
+            )
+    })
     
-    # Запускаем веб-сервер
+    # "Оборачиваем" наш обработчик в правила CORS
+    upload_route = app.router.add_post('/upload', upload_photo_handler)
+    cors.add(upload_route)
+    
+    # --- ЗАПУСК ВЕБ-СЕРВЕРА ---
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, host=WEB_SERVER_HOST, port=WEB_SERVER_PORT)
     await site.start()
     
-    print(f"Сервер слушает на {WEB_SERVER_HOST}:{WEB_SERVER_PORT}")
+    print(f"Сервер слушает на {WEB_SERVER_HOST}:{WEB_SERVER_PORT} с настроенным CORS")
     
-    # Чтобы сервер не закрылся
     await asyncio.Event().wait()
 
 if __name__ == '__main__':
