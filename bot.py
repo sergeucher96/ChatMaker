@@ -6,11 +6,15 @@ import hashlib
 from urllib.parse import parse_qsl
 
 from aiohttp import web
-import aiohttp_cors # <-- Импортируем новую библиотеку
+import aiohttp_cors
 from aiogram import Bot, Dispatcher, types
+from aiogram.filters import CommandStart
+from aiogram.types import MenuButtonWebApp, WebAppInfo
 
 # --- НАСТРОЙКИ ---
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+# ВАЖНО: Убедись, что здесь правильная ссылка на твой сайт
+WEB_APP_URL = "https://sergeucher96.github.io/ChatMaker/" 
 WEB_SERVER_HOST = "0.0.0.0"
 WEB_SERVER_PORT = int(os.getenv("PORT", 8080))
 
@@ -18,6 +22,27 @@ WEB_SERVER_PORT = int(os.getenv("PORT", 8080))
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher()
 app = web.Application()
+
+# --- ОБРАБОТЧИК КОМАНДЫ /start (ВОЗВРАЩАЕМ ЕГО НА МЕСТО) ---
+@dp.message(CommandStart())
+async def command_start_handler(message: types.Message):
+    """
+    Этот обработчик будет срабатывать, когда пользователь напишет /start
+    """
+    # Устанавливаем специальную кнопку "Меню" для этого пользователя
+    await bot.set_chat_menu_button(
+        chat_id=message.chat.id,
+        menu_button=MenuButtonWebApp(
+            text="Создать Историю", # Текст, который будет на кнопке
+            web_app=WebAppInfo(url=WEB_APP_URL)
+        )
+    )
+    
+    # Отправляем приветственное сообщение
+    await message.answer(
+        "Привет! Я бот для создания чат-историй.\n\n"
+        "Чтобы запустить редактор, нажми на кнопку 'Создать Историю' в меню 👇"
+    )
 
 def validate_init_data(init_data: str, bot_token: str) -> (bool, dict):
     """Проверяет подлинность данных от Telegram"""
@@ -41,7 +66,6 @@ async def upload_photo_handler(request: web.Request):
     """Принимает картинку от Web App и отправляет ее пользователю"""
     try:
         data = await request.post()
-        
         photo_field = data.get('photo')
         init_data_str = data.get('initData')
 
@@ -63,26 +87,52 @@ async def upload_photo_handler(request: web.Request):
         )
         
         return web.json_response({'status': 'ok'}, status=200)
-
     except Exception as e:
         print(f"Ошибка на сервере при загрузке: {e}")
         return web.json_response({'error': 'Внутренняя ошибка сервера.'}, status=500)
+        
+async def on_startup(app):
+    """Действия при старте сервера"""
+    # Устанавливаем вебхук для бота, чтобы он получал сообщения от Telegram
+    webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{BOT_TOKEN}"
+    await bot.set_webhook(webhook_url)
+    print(f"Вебхук установлен на: {webhook_url}")
+
+async def main_bot_logic(dp: Dispatcher):
+    """Эта функция будет запущена веб-сервером для обработки входящих от Telegram"""
+    # Здесь мы не используем start_polling, так как работаем через вебхуки
+    print("Логика бота готова к приему вебхуков...")
+
+
+# Создаем обработчик для вебхуков
+async def webhook_handler(request: web.Request):
+    # Получаем обновление от Telegram
+    update_data = await request.json()
+    update = types.Update(**update_data)
+    # Передаем его в диспетчер aiogram для обработки
+    await dp.feed_update(bot=bot, update=update)
+    return web.Response()
+
 
 async def main():
     """Главная функция для запуска"""
     # --- НАСТРОЙКА CORS ---
-    # Разрешаем всем (*) доменам отправлять запросы. Для простоты это лучший вариант.
     cors = aiohttp_cors.setup(app, defaults={
         "*": aiohttp_cors.ResourceOptions(
-                allow_credentials=True,
-                expose_headers="*",
-                allow_headers="*",
+                allow_credentials=True, expose_headers="*", allow_headers="*",
             )
     })
     
-    # "Оборачиваем" наш обработчик в правила CORS
+    # "Оборачиваем" наш обработчик загрузки в правила CORS
     upload_route = app.router.add_post('/upload', upload_photo_handler)
     cors.add(upload_route)
+
+    # "Оборачиваем" обработчик вебхука в правила CORS (на всякий случай)
+    webhook_route = app.router.add_post(f'/{BOT_TOKEN}', webhook_handler)
+    cors.add(webhook_route)
+
+    # Добавляем действия при старте и запуске логики бота
+    app.on_startup.append(on_startup)
     
     # --- ЗАПУСК ВЕБ-СЕРВЕРА ---
     runner = web.AppRunner(app)
@@ -90,9 +140,14 @@ async def main():
     site = web.TCPSite(runner, host=WEB_SERVER_HOST, port=WEB_SERVER_PORT)
     await site.start()
     
-    print(f"Сервер слушает на {WEB_SERVER_HOST}:{WEB_SERVER_PORT} с настроенным CORS")
+    print(f"Сервер слушает на {WEB_SERVER_HOST}:{WEB_SERVER_PORT}")
     
+    # Запускаем логику бота
+    asyncio.create_task(main_bot_logic(dp))
+    
+    # Чтобы сервер не закрылся
     await asyncio.Event().wait()
+
 
 if __name__ == '__main__':
     asyncio.run(main())
