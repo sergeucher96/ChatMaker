@@ -9,7 +9,7 @@ from aiogram.types import MenuButtonWebApp, WebAppInfo
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8311750353:AAF9ur2OgRWYMBK7FgNU7Oit8IIezCkAtYY") 
 
 # Вставь сюда ПОЛНУЮ ссылку на твой опубликованный сайт на GitHub Pages
-WEB_APP_URL = "https://sergeucher96.github.io/Chat-story-maker-/" # <--- ВАША ССЫЛКА ЗДЕСЬ
+WEB_APP_URL = "https://sergeucher96.github.io/ChatMaker/" # <--- ВАША ССЫЛКА ЗДЕСЬ
 
 # --- КОД БОТА (не трогай его) ---
 dp = Dispatcher()
@@ -41,4 +41,5 @@ async def main():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
+
     asyncio.run(main())
