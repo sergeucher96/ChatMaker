@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Chat Story Maker</title>
     
     <link rel="stylesheet" href="style.css">
@@ -12,17 +12,7 @@
 </head>
 <body>
 
-    <!-- ЭКРАН-ЗАСТАВКА ДЛЯ ВХОДА В ПОЛНОЭКРАННЫЙ РЕЖИМ -->
-    <div id="splash-screen">
-        <div class="splash-content">
-            <h1>Chat Story Maker</h1>
-            <p>Нажмите, чтобы начать</p>
-            <button id="enter-fullscreen-btn">Войти в полноэкранном режиме</button>
-        </div>
-    </div>
-
-    <!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ (изначально скрыто) -->
-    <div class="app-container" id="app-container" style="display: none;">
+    <div class="app-container" id="app-container">
         <div class="top-bar">
             <div class="mode-switcher" id="mode-switcher">
                 <button class="mode-btn active" data-mode="personal">👤 Личный</button>
