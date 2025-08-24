@@ -1,4 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
+     if (window.Telegram && window.Telegram.WebApp) {
+        const tg = window.Telegram.WebApp;
+        
+        // Сообщаем Telegram, что приложение готово
+        tg.ready();
+        
+        // САМАЯ ВАЖНАЯ ЧАСТЬ:
+        // Эта функция будет вызываться КАЖДЫЙ РАЗ, когда меняется тема в Telegram
+        tg.onEvent('themeChanged', function() {
+            // Мы добавляем или убираем класс 'dark-mode' у всего документа
+            document.documentElement.classList.toggle('dark-mode', tg.colorScheme === 'dark');
+        });
+        
+        // Применяем тему сразу при загрузке
+        document.documentElement.classList.toggle('dark-mode', tg.colorScheme === 'dark');
+    }
     // --- ЭЛЕМЕНТЫ DOM ---
     const splashScreen = document.getElementById('splash-screen');
     const enterFullscreenBtn = document.getElementById('enter-fullscreen-btn');
