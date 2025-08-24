@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Сообщаем Telegram, что приложение готово
         tg.ready();
-        
+        tg.expand(); 
         // САМАЯ ВАЖНАЯ ЧАСТЬ:
         // Эта функция будет вызываться КАЖДЫЙ РАЗ, когда меняется тема в Telegram
         tg.onEvent('themeChanged', function() {
@@ -344,3 +344,4 @@ document.addEventListener('DOMContentLoaded', () => {
         window.Telegram.WebApp.ready();
     }
 });
+
