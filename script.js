@@ -1,23 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
-     if (window.Telegram && window.Telegram.WebApp) {
+    // --- ИНТЕГРАЦИЯ С TELEGRAM ---
+    if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
-        
-        // Сообщаем Telegram, что приложение готово
         tg.ready();
-        tg.expand(); 
-        // САМАЯ ВАЖНАЯ ЧАСТЬ:
-        // Эта функция будет вызываться КАЖДЫЙ РАЗ, когда меняется тема в Telegram
-        tg.onEvent('themeChanged', function() {
-            // Мы добавляем или убираем класс 'dark-mode' у всего документа
-            document.documentElement.classList.toggle('dark-mode', tg.colorScheme === 'dark');
-        });
-        
-        // Применяем тему сразу при загрузке
-        document.documentElement.classList.toggle('dark-mode', tg.colorScheme === 'dark');
+        tg.expand(); // <<--- ЕДИНСТВЕННАЯ ВАЖНАЯ КОМАНДА
     }
-    // --- ЭЛЕМЕНТЫ DOM ---
-    const splashScreen = document.getElementById('splash-screen');
-    const enterFullscreenBtn = document.getElementById('enter-fullscreen-btn');
+
+    // --- Элементы DOM (весь твой код) ---
     const appContainer = document.getElementById('app-container');
     const chatScreen = document.getElementById('chat-screen');
     const messageInput = document.getElementById('message-input');
@@ -36,46 +25,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportPreviewOverlay = document.getElementById('export-preview-overlay');
     const exportPreviewImg = document.getElementById('export-preview-img');
 
-    // --- ЛОГИКА ПОЛНОЭКРАННОГО РЕЖИМА ---
-    function goFullscreen() {
-        const elem = document.documentElement;
-        if (elem.requestFullscreen) {
-            elem.requestFullscreen().catch(err => {
-                console.error(`Ошибка при входе в полноэкранный режим: ${err.message}`);
-                // Если не удалось, просто запускаем приложение
-                startApp();
-            });
-        } else if (elem.webkitRequestFullscreen) {
-            elem.webkitRequestFullscreen();
-        } else if (elem.msRequestFullscreen) {
-            elem.msRequestFullscreen();
-        } else {
-             // Если API не поддерживается, просто запускаем приложение
-            startApp();
-        }
-    }
-
-    function startApp() {
-        splashScreen.style.display = 'none';
-        appContainer.style.display = 'flex';
-        setFixedViewportHeight(); // Вызываем после показа, чтобы размеры были корректны
-    }
-
-    enterFullscreenBtn.addEventListener('click', () => {
-        goFullscreen();
-        // Примечание: startApp() будет вызван либо сразу (если API не поддерживается), 
-        // либо после выхода из полноэкранного режима, либо его нужно вызвать принудительно.
-        // Для простоты, вызовем его сразу после запроса.
-        startApp();
-    });
 
     // --- Фиксация высоты для мобильных устройств ---
     function setFixedViewportHeight() {
-        // Теперь используем 100% высоты окна, так как нет внешних рамок
         const vh = window.innerHeight;
         appContainer.style.height = `${vh}px`;
     }
     window.addEventListener('resize', setFixedViewportHeight);
+
 
     // --- Данные ---
     const backgroundOptions = [ { id: 'bg1', value: `url("1.jpg")` }, { id: 'bg2', value: `url("2.jpg")` }, { id: 'bg3', value: `url("3.jpg")` }, { id: 'bg4', value: `url("4.jpg")` }, { id: 'bg5', value: `url("5.jpg")` }, { id: 'bg6', value: `url("6.jpg")` }, { id: 'bg7', value: `url("7.jpg")` }, { id: 'bg8', value: `url("8.jpg")` }, { id: 'bg9', value: `url("9.jpg")` }, { id: 'bg10', value: `url("10.jpg")` } ];
@@ -230,15 +187,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             exportPreviewImg.src = imageUrl;
             exportPreviewOverlay.classList.add('visible');
-            
-            const elem = exportPreviewOverlay;
-            if (elem.requestFullscreen) {
-                elem.requestFullscreen();
-            } else if (elem.webkitRequestFullscreen) {
-                elem.webkitRequestFullscreen();
-            } else if (elem.msRequestFullscreen) {
-                elem.msRequestFullscreen();
-            }
 
         } catch (err) {
             console.error("Ошибка при создании изображения:", err);
@@ -246,16 +194,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             exportBtn.disabled = false;
             exportBtn.textContent = originalButtonText;
-        }
-    }
-
-    function exitFullscreen() {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) {
-            document.msExitFullscreen();
         }
     }
 
@@ -332,16 +270,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     exportPreviewOverlay.addEventListener('click', () => {
         exportPreviewOverlay.classList.remove('visible');
-        exitFullscreen();
     });
 
     // --- ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ---
     loadState();
     renderColorPalette();
     switchMode(appData.currentMode);
-    // Добавляем инициализацию Telegram Web App
-    if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.ready();
-    }
+    setFixedViewportHeight(); // Вызываем в конце для установки начального размера
 });
-
