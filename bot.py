@@ -6,7 +6,7 @@ from aiogram.types import MenuButtonWebApp, WebAppInfo
 
 # --- НАСТРОЙКИ ---
 # Возьми токен своего бота из @BotFather
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8311750353:AAF9ur2OgRWYMBK7FgNU7Oit8IIezCkAtYY") 
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 # Вставь сюда ПОЛНУЮ ссылку на твой опубликованный сайт на GitHub Pages
 WEB_APP_URL = "https://sergeucher96.github.io/ChatMaker/" # <--- ВАША ССЫЛКА ЗДЕСЬ
@@ -43,3 +43,4 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(main())
+
