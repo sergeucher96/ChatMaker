@@ -1,12 +1,22 @@
+// --- ИНТЕГРАЦИЯ С TELEGRAM (выполняется до загрузки DOM) ---
+if (window.Telegram && window.Telegram.WebApp) {
+    window.Telegram.WebApp.ready();
+    window.Telegram.WebApp.expand();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    // --- ИНТЕГРАЦИЯ С TELEGRAM ---
+    
+    // Адаптация под тему Telegram
     if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand(); // <<--- ЕДИНСТВЕННАЯ ВАЖНАЯ КОМАНДА
+        function applyTheme() {
+            document.documentElement.className = tg.colorScheme === 'dark' ? 'dark-mode' : '';
+        }
+        tg.onEvent('themeChanged', applyTheme);
+        applyTheme();
     }
 
-    // --- Элементы DOM (весь твой код) ---
+    // --- Элементы DOM ---
     const appContainer = document.getElementById('app-container');
     const chatScreen = document.getElementById('chat-screen');
     const messageInput = document.getElementById('message-input');
@@ -25,14 +35,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportPreviewOverlay = document.getElementById('export-preview-overlay');
     const exportPreviewImg = document.getElementById('export-preview-img');
 
-
     // --- Фиксация высоты для мобильных устройств ---
     function setFixedViewportHeight() {
-        const vh = window.innerHeight;
-        appContainer.style.height = `${vh}px`;
+        appContainer.style.height = `${window.innerHeight}px`;
     }
     window.addEventListener('resize', setFixedViewportHeight);
-
+    setFixedViewportHeight(); // Вызываем сразу
 
     // --- Данные ---
     const backgroundOptions = [ { id: 'bg1', value: `url("1.jpg")` }, { id: 'bg2', value: `url("2.jpg")` }, { id: 'bg3', value: `url("3.jpg")` }, { id: 'bg4', value: `url("4.jpg")` }, { id: 'bg5', value: `url("5.jpg")` }, { id: 'bg6', value: `url("6.jpg")` }, { id: 'bg7', value: `url("7.jpg")` }, { id: 'bg8', value: `url("8.jpg")` }, { id: 'bg9', value: `url("9.jpg")` }, { id: 'bg10', value: `url("10.jpg")` } ];
@@ -43,8 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getInitialState() {
         return {
-            currentMode: 'personal',
-            currentTime: '12:30',
+            currentMode: 'personal', currentTime: '12:30',
             personal: { participants: [ { id: 1, name: 'Вы', type: 'sent' }, { id: 2, name: 'Собеседник', type: 'received' } ], messages: [], nextParticipantId: 3, selectedParticipantId: 1, currentBackground: backgroundOptions[0].value },
             group: { participants: [ { id: 1, name: 'Вы', type: 'sent' }, { id: 2, name: 'Анна', type: 'received' }, { id: 3, name: 'Павел', type: 'received' } ], messages: [], nextParticipantId: 4, selectedParticipantId: 1, currentBackground: backgroundOptions[0].value }
         };
@@ -276,5 +283,4 @@ document.addEventListener('DOMContentLoaded', () => {
     loadState();
     renderColorPalette();
     switchMode(appData.currentMode);
-    setFixedViewportHeight(); // Вызываем в конце для установки начального размера
 });
