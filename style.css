@@ -2,7 +2,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
 
 :root {
-    /* Эти переменные будут автоматически заменены цветами из клиента Telegram */
     --tg-bg-color: var(--tg-theme-bg-color, #ffffff);
     --tg-text-color: var(--tg-theme-text-color, #000000);
     --tg-hint-color: var(--tg-theme-hint-color, #8a9ba8);
@@ -10,14 +9,11 @@
     --tg-button-color: var(--tg-theme-button-color, #3390ec);
     --tg-button-text-color: var(--tg-theme-button-text-color, #ffffff);
     --tg-secondary-bg-color: var(--tg-theme-secondary-bg-color, #f1f3f4);
-    
-    /* Твои кастомные цвета, если нужны */
     --tg-sent-bg: #e1ffc7;
     --tg-received-bg: #ffffff;
     --danger-color: #e53935;
 }
 
-/* Настройки для темной темы */
 :root.dark-mode {
     --tg-sent-bg: #375344;
     --tg-received-bg: var(--tg-secondary-bg-color, #212e3a);
@@ -39,7 +35,7 @@ body {
     overscroll-behavior-y: contain;
 }
 
-/* --- Контейнер приложения --- */
+/* --- Контейнер приложения (ИСПРАВЛЕННЫЙ) --- */
 .app-container {
     width: 100vw;
     height: 100vh;
@@ -68,7 +64,16 @@ body {
 /* --- Палитра цветов --- */
 .color-palette { background-color: var(--tg-secondary-bg-color); padding: 0 15px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; border-bottom: 1px solid transparent; flex-shrink: 0; }
 .color-palette.visible { max-height: 100px; padding: 15px; border-bottom-color: var(--tg-secondary-bg-color); }
-.color-swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid var(--tg-secondary-bg-color); transition: all 0.2s ease; background-size: cover; background-position: center; }
+.color-swatch { 
+    width: 28px; height: 28px; 
+    border-radius: 50%; 
+    cursor: pointer; 
+    border: 2px solid var(--tg-secondary-bg-color); 
+    transition: all 0.2s ease; 
+    background-size: cover; 
+    background-position: center; 
+    background-color: #ccc; /* ИСПРАВЛЕНО: Добавлен фоновый цвет-заглушка */
+}
 .color-swatch.active { border-color: var(--tg-link-color); }
 
 /* --- Контейнер для экспорта --- */
@@ -82,63 +87,28 @@ body {
 
 /* --- Шапка чата --- */
 .chat-header {
-    display: flex;
-    align-items: center;
-    padding: 8px 15px;
-    background-color: var(--tg-bg-color);
-    flex-shrink: 0;
+    display: flex; align-items: center; padding: 8px 15px;
+    background-color: var(--tg-bg-color); flex-shrink: 0;
     border-bottom: 1px solid var(--tg-secondary-bg-color);
 }
 .header-avatar {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    background-color: #4a91da;
-    color: white;
-    font-size: 1.2em;
-    font-weight: bold;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    user-select: none;
+    width: 42px; height: 42px; border-radius: 50%; background-color: #4a91da;
+    color: white; font-size: 1.2em; font-weight: bold;
+    display: flex; justify-content: center; align-items: center;
+    cursor: pointer; user-select: none;
 }
-.header-info {
-    flex-grow: 1;
-    margin-left: 12px;
-    cursor: pointer;
-}
-.header-name {
-    font-weight: 500;
-    font-size: 17px;
-    color: var(--tg-text-color);
-}
-.header-status {
-    font-size: 13px;
-    color: var(--tg-hint-color);
-    user-select: none;
-}
-.header-actions {
-    display: flex;
-    gap: 15px;
-    color: var(--tg-link-color);
-    font-size: 24px;
-}
-.header-icon {
-    line-height: 1;
-}
+.header-info { flex-grow: 1; margin-left: 12px; cursor: pointer; }
+.header-name { font-weight: 500; font-size: 17px; color: var(--tg-text-color); }
+.header-status { font-size: 13px; color: var(--tg-hint-color); user-select: none; }
+.header-actions { display: flex; gap: 15px; color: var(--tg-link-color); font-size: 24px; }
+.header-icon { line-height: 1; }
 
 /* --- Экран чата --- */
 .chat-screen { 
-    flex-grow: 1; 
-    padding: 10px 15px; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 2px; 
-    position: relative; 
-    overflow-y: auto; 
-    background-size: cover; 
-    background-position: center; 
+    flex-grow: 1; padding: 10px 15px; 
+    display: flex; flex-direction: column; 
+    gap: 2px; position: relative; overflow-y: auto; 
+    background-size: cover; background-position: center; 
 }
 
 /* --- Сообщения --- */
@@ -166,7 +136,6 @@ body {
 .message-composer { padding: 8px 10px; border-top: 1px solid var(--tg-secondary-bg-color); background-color: var(--tg-bg-color); display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); }
 #message-input { flex-grow: 1; min-height: 24px; padding: 10px 15px; background-color: var(--tg-secondary-bg-color); color: var(--tg-text-color); border: none; border-radius: 22px; font-size: 16px; font-family: inherit; line-height: 1.4; resize: none; max-height: 150px; }
 #send-btn { background-color: var(--tg-button-color); color: var(--tg-button-text-color); border: none; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: transform 0.2s ease; flex-shrink: 0; }
-#send-btn:active { transform: scale(0.9); }
 .sender-selector-btn { background-color: var(--tg-secondary-bg-color); color: var(--tg-text-color); border: none; border-radius: 22px; padding: 0 15px; font-weight: 500; font-size: 16px; height: 44px; flex-shrink: 0; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
 .sender-selector-btn::after { content: ' ▾'; opacity: 0.5; }
 @keyframes pop-in { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
