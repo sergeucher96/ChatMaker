@@ -36,6 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const setTimeBtn = document.getElementById('set-time-btn');
     const exportPreviewOverlay = document.getElementById('export-preview-overlay');
     const exportPreviewImg = document.getElementById('export-preview-img');
+    
+    // НОВЫЕ ЭЛЕМЕНТЫ DOM ДЛЯ ШАПКИ
     const headerAvatar = document.getElementById('header-avatar');
     const headerInfo = document.getElementById('header-info');
     const headerName = document.getElementById('header-name');
@@ -276,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const li = document.createElement('li');
             if(p.id === state.selectedParticipantId) li.classList.add('active-sender');
             li.dataset.id = p.id;
-            li.innerHTML = ` <span class="participant-name">${p.name}</span> <div class="participant-actions"> <button class="edit-btn" data-id="${p.id}">✏️</button> ${state.participants.length > 2 && p.id !== 1 ? `<button class="delete-btn" data-id="${p.id}">🗑️</button>` : ''} </div> `;
+            li.innerHTML = ` <span class="participant-name">${p.name}</span> <div class="participant-actions"> <button class-name="edit-btn" data-id="${p.id}">✏️</button> ${state.participants.length > 2 && p.id !== 1 ? `<button class="delete-btn" data-id="${p.id}">🗑️</button>` : ''} </div> `;
             participantsList.appendChild(li);
         });
         addParticipantModalBtn.style.display = state.participants.length < 5 ? 'block' : 'none';
@@ -342,11 +344,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('click', (e) => { if ( colorPalette.classList.contains('visible') && !changeBgBtn.contains(e.target) && !colorPalette.contains(e.target) ) { colorPalette.classList.remove('visible'); } });
     exportPreviewOverlay.addEventListener('click', () => { exportPreviewOverlay.classList.remove('visible'); });
 
-    // Обработчики для шапки
     headerInfo.addEventListener('click', () => {
         const state = appData[appData.currentMode];
         const newName = prompt('Введите новое имя:', state.header.name);
-        if (newName && newName.trim()) {
+        if (newName && newName.trim().length > 0) {
             state.header.name = newName.trim();
             saveState();
             renderHeader(state);
@@ -358,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const state = appData[appData.currentMode];
         if (appData.currentMode !== 'personal') {
             const newAvatar = prompt('Введите инициалы (до 2-х букв):', state.header.avatar);
-            if (newAvatar && newAvatar.trim()) {
+            if (newAvatar && newAvatar.trim().length > 0) {
                 state.header.avatar = newAvatar.trim().substring(0, 2);
                 saveState();
                 renderHeader(state);
@@ -376,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const state = appData[appData.currentMode];
         if (appData.currentMode !== 'personal') {
             const newStatus = prompt('Введите новый статус:', state.header.status);
-            if (newStatus && newStatus.trim()) {
+            if (newStatus && newStatus.trim().length > 0) {
                 state.header.status = newStatus.trim();
                 saveState();
                 renderHeader(state);
