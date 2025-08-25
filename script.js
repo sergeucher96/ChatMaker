@@ -1,4 +1,4 @@
-// --- ИНТЕГРАЦИЯ С TELEGRAM (выполняется до загрузки DOM) ---
+// --- ИНТЕГРАЦИЯ С TELEGRAM ---
 if (window.Telegram && window.Telegram.WebApp) {
     const tg = window.Telegram.WebApp;
     tg.ready();
@@ -37,11 +37,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportPreviewOverlay = document.getElementById('export-preview-overlay');
     const exportPreviewImg = document.getElementById('export-preview-img');
     const headerAvatar = document.getElementById('header-avatar');
+    const headerInfo = document.getElementById('header-info');
     const headerName = document.getElementById('header-name');
     const headerStatus = document.getElementById('header-status');
     const exportWrapper = document.getElementById('export-wrapper');
 
-    // --- Фиксация высоты для мобильных устройств ---
+    // --- Фиксация высоты ---
     function setFixedViewportHeight() { appContainer.style.height = `${window.innerHeight}px`; }
     window.addEventListener('resize', setFixedViewportHeight);
 
@@ -156,10 +157,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function createFinalCanvas() {
+        // Устанавливаем цвет фона для html2canvas равным цвету body
+        const bgColor = window.getComputedStyle(document.body).backgroundColor;
         const canvas = await html2canvas(exportWrapper, {
             scale: 2,
             useCORS: true,
-            backgroundColor: window.getComputedStyle(document.body).backgroundColor
+            backgroundColor: bgColor
         });
         return canvas;
     }
@@ -267,7 +270,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateSenderSelector(state) { const selected = state.participants.find(p => p.id === state.selectedParticipantId); senderSelectorBtn.textContent = selected ? selected.name : 'Выбрать'; }
     function selectParticipant(id) { const state = appData[appData.currentMode]; state.selectedParticipantId = id; updateSenderSelector(state); participantsModalOverlay.classList.remove('visible'); saveState(); }
     
-    // --- ВОССТАНОВЛЕННЫЕ ФУНКЦИИ ---
     function openParticipantsModal() {
         const state = appData.group; 
         participantsList.innerHTML = '';
@@ -321,8 +323,6 @@ document.addEventListener('DOMContentLoaded', () => {
             selectParticipant(newParticipant.id); 
         } 
     }
-    // --- КОНЕЦ ВОССТАНОВЛЕННЫХ ФУНКЦИЙ ---
-
 
     // --- ОБРАБОТЧИКИ СОБЫТИЙ ---
     modeSwitcher.addEventListener('click', (e) => { if (e.target.classList.contains('mode-btn')) switchMode(e.target.dataset.mode); });
@@ -344,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
     exportPreviewOverlay.addEventListener('click', () => { exportPreviewOverlay.classList.remove('visible'); });
 
     // Обработчики для шапки
-    headerName.addEventListener('click', () => {
+    headerInfo.addEventListener('click', () => {
         const state = appData[appData.currentMode];
         const newName = prompt('Введите новое имя:', state.header.name);
         if (newName && newName.trim()) {
