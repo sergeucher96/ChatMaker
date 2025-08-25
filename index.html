@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Chat Story Maker</title>
     
     <link rel="stylesheet" href="style.css">
@@ -42,6 +42,7 @@
         </div>
     </div>
     
+    <!-- Модальное окно выбора участников -->
     <div class="modal-overlay" id="participants-modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -56,6 +57,20 @@
         </div>
     </div>
 
+    <!-- Универсальное модальное окно для prompt/confirm -->
+    <div class="modal-overlay" id="custom-modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="custom-modal-title"></h2>
+            </div>
+            <div class="modal-body" id="custom-modal-body">
+            </div>
+            <div class="modal-footer" id="custom-modal-footer">
+            </div>
+        </div>
+    </div>
+
+    <!-- Оверлей для предпросмотра скриншота -->
     <div class="export-preview-overlay" id="export-preview-overlay">
         <img id="export-preview-img" src="" alt="Готовое изображение">
     </div>
@@ -63,4 +78,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
