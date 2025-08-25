@@ -57,7 +57,6 @@ body {
     align-items: center; 
     gap: 10px; 
     flex-shrink: 0;
-    /* Важный отступ для "челки" на iPhone и других элементах */
     padding-top: calc(env(safe-area-inset-top, 0px) + 10px); 
 }
 .mode-switcher { background-color: var(--tg-secondary-bg-color); border-radius: 12px; padding: 4px; display: flex; }
@@ -72,8 +71,75 @@ body {
 .color-swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid var(--tg-secondary-bg-color); transition: all 0.2s ease; background-size: cover; background-position: center; }
 .color-swatch.active { border-color: var(--tg-link-color); }
 
+/* --- Контейнер для экспорта --- */
+#export-wrapper {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* --- Шапка чата --- */
+.chat-header {
+    display: flex;
+    align-items: center;
+    padding: 8px 15px;
+    background-color: var(--tg-bg-color);
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--tg-secondary-bg-color);
+}
+.header-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background-color: #4a91da;
+    color: white;
+    font-size: 1.2em;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+.header-info {
+    flex-grow: 1;
+    margin-left: 12px;
+    cursor: pointer;
+}
+.header-name {
+    font-weight: 500;
+    font-size: 17px;
+    color: var(--tg-text-color);
+}
+.header-status {
+    font-size: 13px;
+    color: var(--tg-hint-color);
+    user-select: none;
+}
+.header-actions {
+    display: flex;
+    gap: 15px;
+    color: var(--tg-link-color);
+    font-size: 24px;
+}
+.header-icon {
+    line-height: 1;
+}
+
+
 /* --- Экран чата --- */
-.chat-screen { flex-grow: 1; padding: 10px 15px; display: flex; flex-direction: column; gap: 2px; position: relative; overflow-y: auto; background-size: cover; background-position: center; }
+.chat-screen { 
+    flex-grow: 1; 
+    padding: 10px 15px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 2px; 
+    position: relative; 
+    overflow-y: auto; 
+    background-size: cover; 
+    background-position: center; 
+}
 
 /* --- Сообщения --- */
 .message-wrapper { display: flex; flex-direction: column; max-width: 75%; animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
