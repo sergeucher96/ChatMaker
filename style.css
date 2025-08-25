@@ -73,7 +73,7 @@ body {
 .color-swatch.active { border-color: var(--tg-link-color); }
 
 /* --- Экран чата --- */
-.chat-screen { flex-grow: 1; padding: 10px 15px; display: flex; flex-direction: column; gap: 2px; position: relative; overflow-y: auto; background-size: cover; background-position: center; }
+.chat-screen { flex-grow: 1; padding: 10px 15px; display: flex; flex-direction: column-reverse; gap: 2px; position: relative; overflow-y: auto; background-size: cover; background-position: center; }
 
 /* --- Сообщения --- */
 .message-wrapper { display: flex; flex-direction: column; max-width: 75%; animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
@@ -133,3 +133,4 @@ body {
 .export-preview-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 2000; cursor: pointer; }
 .export-preview-overlay.visible { display: flex; }
 #export-preview-img { max-width: 90%; max-height: 90%; object-fit: contain; }
+
