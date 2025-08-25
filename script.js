@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
             messageEl.appendChild(contentEl);
             messageEl.appendChild(metaEl);
             wrapper.appendChild(messageEl);
-            chatScreen.appendChild(wrapper);
+            chatScreen.prepend(wrapper);
         });
          chatScreen.scrollTop = chatScreen.scrollHeight;
     }
@@ -317,6 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
     switchMode(appData.currentMode);
     setFixedViewportHeight();
 });
+
 
 
 
