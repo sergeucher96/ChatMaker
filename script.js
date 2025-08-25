@@ -206,8 +206,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 formData.append('initData', tg.initData);
 
                 try {
-                    // !!! ВАЖНО: Укажи здесь URL твоего сервиса на Render
-                    const response = await fetch('https://chatmaker-gz1e.onrender.com', {
+                    // *** ИСПРАВЛЕННАЯ СТРОКА ***
+                    const response = await fetch('https://chatmaker-gz1e.onrender.com/upload', {
                         method: 'POST',
                         body: formData,
                     });
