@@ -264,7 +264,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    function resetChat() { if (confirm('Удалить все сообщения?')) { const state = appData[appData.currentMode]; state.messages = []; renderAll(); saveState(); } }
+    // --- ИСПРАВЛЕННАЯ ФУНКЦИЯ ---
+    function resetChat() { 
+        if (confirm('Удалить все сообщения?')) { 
+            const state = appData[appData.currentMode]; 
+            state.messages = []; 
+            // Сбрасываем отправителя на первого в списке (обычно это "Вы")
+            state.selectedParticipantId = state.participants[0].id;
+            renderAll(); 
+            saveState(); 
+        } 
+    }
+
     function handleSenderSelection() { const state = appData[appData.currentMode]; if (appData.currentMode === 'personal') { const newId = state.selectedParticipantId === 1 ? 2 : 1; selectParticipant(newId); } else { openParticipantsModal(); } }
     function updateSenderSelector(state) { const selected = state.participants.find(p => p.id === state.selectedParticipantId); senderSelectorBtn.textContent = selected ? selected.name : 'Выбрать'; }
     function selectParticipant(id) { const state = appData[appData.currentMode]; state.selectedParticipantId = id; updateSenderSelector(state); participantsModalOverlay.classList.remove('visible'); saveState(); }
@@ -393,4 +404,4 @@ document.addEventListener('DOMContentLoaded', () => {
     loadState();
     renderAll();
     setFixedViewportHeight();
-});```
+});
