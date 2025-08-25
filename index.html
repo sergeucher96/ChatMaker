@@ -25,8 +25,24 @@
         </div>
         
         <div class="color-palette" id="color-palette"></div>
-        
-        <div class="chat-screen" id="chat-screen"></div>
+
+        <!-- НОВЫЙ КОНТЕЙНЕР ДЛЯ ЭКСПОРТА -->
+        <div id="export-wrapper">
+            <!-- НОВАЯ ШАПКА ЧАТА -->
+            <div class="chat-header" id="chat-header">
+                <div class="header-avatar" id="header-avatar">С</div>
+                <div class="header-info">
+                    <div class="header-name" id="header-name">Сереженька</div>
+                    <div class="header-status" id="header-status">last seen recently</div>
+                </div>
+                <div class="header-actions">
+                    <div class="header-icon">📞</div>
+                    <div class="header-icon">⋮</div>
+                </div>
+            </div>
+            
+            <div class="chat-screen" id="chat-screen"></div>
+        </div>
         
         <div class="message-composer">
             <button class="sender-selector-btn" id="sender-selector-btn"></button>
@@ -38,7 +54,7 @@
 
         <div class="export-controls">
             <button class="reset-chat-btn" id="reset-chat-btn">🗑️ Сбросить чат</button>
-            <button id="export-btn">Создать картинку для скриншота</button>
+            <button id="export-btn">Создать картинку</button>
         </div>
     </div>
     
