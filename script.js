@@ -157,10 +157,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function createFinalCanvas() {
+        const bgColor = window.getComputedStyle(document.body).backgroundColor;
         const canvas = await html2canvas(exportWrapper, {
             scale: 2,
             useCORS: true,
-            backgroundColor: window.getComputedStyle(document.body).backgroundColor
+            backgroundColor: bgColor
         });
         return canvas;
     }
@@ -342,7 +343,7 @@ document.addEventListener('DOMContentLoaded', () => {
     exportPreviewOverlay.addEventListener('click', () => { exportPreviewOverlay.classList.remove('visible'); });
 
     // Обработчики для шапки
-    headerInfo.addEventListener('click', () => { // ИСПРАВЛЕНО: один обработчик на всю инфо-область
+    headerInfo.addEventListener('click', () => {
         const state = appData[appData.currentMode];
         const newName = prompt('Введите новое имя:', state.header.name);
         if (newName && newName.trim()) {
@@ -353,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     headerAvatar.addEventListener('click', (e) => {
-        e.stopPropagation(); // Предотвращаем срабатывание клика на headerInfo
+        e.stopPropagation();
         const state = appData[appData.currentMode];
         if (appData.currentMode !== 'personal') {
             const newAvatar = prompt('Введите инициалы (до 2-х букв):', state.header.avatar);
@@ -371,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     headerStatus.addEventListener('click', (e) => {
-        e.stopPropagation(); // Предотвращаем срабатывание клика на headerInfo
+        e.stopPropagation();
         const state = appData[appData.currentMode];
         if (appData.currentMode !== 'personal') {
             const newStatus = prompt('Введите новый статус:', state.header.status);
