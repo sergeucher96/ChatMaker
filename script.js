@@ -162,14 +162,8 @@ document.addEventListener('DOMContentLoaded', () => {
             backgroundColor: window.getComputedStyle(document.body).backgroundColor
         });
         
-        const finalCanvas = document.createElement('canvas');
-        const ctx = finalCanvas.getContext('2d');
-        const exportWidth = 1080;
-        const exportHeight = (exportWidth / canvas.width) * canvas.height;
-        finalCanvas.width = exportWidth;
-        finalCanvas.height = exportHeight;
-        ctx.drawImage(canvas, 0, 0, exportWidth, exportHeight);
-        return finalCanvas;
+        // Возвращаем canvas как есть, без изменения размера
+        return canvas;
     }
     
     async function exportChat() {
@@ -250,7 +244,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function changeBackground(bgValue, shouldSave = true) { 
         const state = appData[appData.currentMode]; 
         state.currentBackground = bgValue; 
-        // ИСПРАВЛЕНО: Применяем фон к chatScreen, а не к wrapper
         chatScreen.style.backgroundImage = bgValue;
         chatScreen.style.backgroundSize = 'cover';
         chatScreen.style.backgroundPosition = 'center'; 
@@ -276,10 +269,59 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateSenderSelector(state) { const selected = state.participants.find(p => p.id === state.selectedParticipantId); senderSelectorBtn.textContent = selected ? selected.name : 'Выбрать'; }
     function selectParticipant(id) { const state = appData[appData.currentMode]; state.selectedParticipantId = id; updateSenderSelector(state); participantsModalOverlay.classList.remove('visible'); saveState(); }
     
-    function openParticipantsModal() { /* ... (твой код без изменений) ... */ }
-    function editParticipantName(id) { /* ... (твой код без изменений) ... */ }
-    function deleteParticipant(id) { /* ... (твой код без изменений) ... */ }
-    function addParticipant() { /* ... (твой код без изменений) ... */ }
+    function openParticipantsModal() {
+        const state = appData.group; 
+        participantsList.innerHTML = '';
+        state.participants.forEach(p => {
+            const li = document.createElement('li');
+            if(p.id === state.selectedParticipantId) li.classList.add('active-sender');
+            li.dataset.id = p.id;
+            li.innerHTML = ` <span class="participant-name">${p.name}</span> <div class="participant-actions"> <button class="edit-btn" data-id="${p.id}">✏️</button> ${state.participants.length > 2 && p.id !== 1 ? `<button class="delete-btn" data-id="${p.id}">🗑️</button>` : ''} </div> `;
+            participantsList.appendChild(li);
+        });
+        addParticipantModalBtn.style.display = state.participants.length < 5 ? 'block' : 'none';
+        participantsModalOverlay.classList.add('visible');
+    }
+    
+    function editParticipantName(id) {
+        const state = appData.group;
+        const participant = state.participants.find(p => p.id === id);
+        const newName = prompt(`Новое имя для "${participant.name}":`, participant.name);
+        if (newName && newName.trim()) {
+            participant.name = newName.trim();
+            saveState();
+            renderAll();
+            openParticipantsModal();
+        }
+    }
+    
+    function deleteParticipant(id) { 
+        if (id === 1) return; 
+        const state = appData.group; 
+        if (state.participants.length <= 2) return; 
+        if (confirm('Удалить участника?')) { 
+            state.participants = state.participants.filter(p => p.id !== id); 
+            state.messages = state.messages.filter(m => m.participantId !== id); 
+            if (state.selectedParticipantId === id) { state.selectedParticipantId = state.participants[0].id; } 
+            saveState(); 
+            renderAll(); 
+            openParticipantsModal(); 
+        } 
+    }
+    
+    function addParticipant() { 
+        const state = appData.group; 
+        if (state.participants.length >= 5) return; 
+        const name = prompt('Имя нового участника:', `Участник ${state.participants.length}`); 
+        if (name && name.trim()) { 
+            const newParticipant = { id: state.nextParticipantId++, name: name.trim(), type: 'received' }; 
+            state.participants.push(newParticipant); 
+            saveState(); 
+            renderAll(); 
+            openParticipantsModal(); 
+            selectParticipant(newParticipant.id); 
+        } 
+    }
 
     // --- ОБРАБОТЧИКИ СОБЫТИЙ ---
     modeSwitcher.addEventListener('click', (e) => { if (e.target.classList.contains('mode-btn')) switchMode(e.target.dataset.mode); });
