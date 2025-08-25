@@ -100,8 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
             wrapper.appendChild(messageEl);
             chatScreen.appendChild(wrapper);
         });
-        chatScreen.scrollTop = chatScreen.scrollHeight;
-    }
+ 
     function sendMessage() {
         const text = messageInput.value.trim(); if (!text) return;
         const state = appData[appData.currentMode];
@@ -317,4 +316,5 @@ document.addEventListener('DOMContentLoaded', () => {
     switchMode(appData.currentMode);
     setFixedViewportHeight();
 });
+
 
