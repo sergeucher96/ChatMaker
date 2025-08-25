@@ -13,9 +13,9 @@ from aiogram.types import MenuButtonWebApp, WebAppInfo
 
 # --- НАСТРОЙКИ ---
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+# Убедись, что здесь правильная ссылка на твой сайт
 WEB_APP_URL = "https://sergeucher96.github.io/ChatMaker/" 
 WEB_SERVER_HOST = "0.0.0.0"
-# Render сам предоставит правильный порт в переменной PORT, по умолчанию 10000
 WEB_SERVER_PORT = int(os.getenv("PORT", 10000))
 
 # --- Инициализация ---
@@ -23,7 +23,7 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 app = web.Application()
 
-# --- ОБРАБОТЧИКИ БОТА ---
+# --- ОБРАБОТЧИК КОМАНДЫ /start ---
 @dp.message(CommandStart())
 async def command_start_handler(message: types.Message):
     await bot.set_chat_menu_button(
@@ -74,23 +74,36 @@ async def upload_photo_handler(request: web.Request):
         print(f"Ошибка при загрузке: {e}")
         return web.json_response({'error': 'Ошибка сервера.'}, status=500)
 
-# --- ФУНКЦИИ ЗАПУСКА ---
-async def run_bot():
-    """Запускает polling бота"""
-    await bot.delete_webhook(drop_pending_updates=True)
-    await dp.start_polling(bot)
+# --- НОВЫЙ ОБРАБОТЧИК ДЛЯ СООБЩЕНИЙ ОТ TELEGRAM (ВЕБХУК) ---
+async def webhook_handler(request: web.Request):
+    update_data = await request.json()
+    update = types.Update(**update_data)
+    await dp.feed_update(bot=bot, update=update)
+    return web.Response()
+
+# --- ФУНКЦИЯ ЗАПУСКА ---
+async def on_startup(app_instance):
+    """Действия при старте сервера"""
+    webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{BOT_TOKEN}"
+    await bot.set_webhook(webhook_url)
+    print(f"Вебхук установлен на: {webhook_url}")
 
 async def main():
-    """Главная функция для запуска сервера и бота"""
     # Настройка CORS
     cors = aiohttp_cors.setup(app, defaults={
         "*": aiohttp_cors.ResourceOptions(allow_credentials=True, expose_headers="*", allow_headers="*")
     })
+    
+    # "Оборачиваем" наши обработчики в правила CORS
     upload_route = app.router.add_post('/upload', upload_photo_handler)
     cors.add(upload_route)
     
-    # Запускаем бота в фоновой задаче
-    asyncio.create_task(run_bot())
+    # Добавляем маршрут для вебхука Telegram
+    webhook_route = app.router.add_post(f'/{BOT_TOKEN}', webhook_handler)
+    cors.add(webhook_route)
+
+    # Добавляем действия при старте
+    app.on_startup.append(on_startup)
     
     # Запускаем веб-сервер
     runner = web.AppRunner(app)
@@ -100,6 +113,7 @@ async def main():
     
     print(f"Сервер слушает на {WEB_SERVER_HOST}:{WEB_SERVER_PORT}")
     await asyncio.Event().wait()
+
 
 if __name__ == '__main__':
     print("Запуск приложения...")
