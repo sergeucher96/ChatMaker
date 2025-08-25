@@ -157,12 +157,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function createFinalCanvas() {
-        // Устанавливаем цвет фона для html2canvas равным цвету body
-        const bgColor = window.getComputedStyle(document.body).backgroundColor;
         const canvas = await html2canvas(exportWrapper, {
             scale: 2,
             useCORS: true,
-            backgroundColor: bgColor
+            backgroundColor: window.getComputedStyle(document.body).backgroundColor
         });
         return canvas;
     }
@@ -344,7 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
     exportPreviewOverlay.addEventListener('click', () => { exportPreviewOverlay.classList.remove('visible'); });
 
     // Обработчики для шапки
-    headerInfo.addEventListener('click', () => {
+    headerInfo.addEventListener('click', () => { // ИСПРАВЛЕНО: один обработчик на всю инфо-область
         const state = appData[appData.currentMode];
         const newName = prompt('Введите новое имя:', state.header.name);
         if (newName && newName.trim()) {
@@ -354,7 +352,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    headerAvatar.addEventListener('click', () => {
+    headerAvatar.addEventListener('click', (e) => {
+        e.stopPropagation(); // Предотвращаем срабатывание клика на headerInfo
         const state = appData[appData.currentMode];
         if (appData.currentMode !== 'personal') {
             const newAvatar = prompt('Введите инициалы (до 2-х букв):', state.header.avatar);
@@ -371,7 +370,8 @@ document.addEventListener('DOMContentLoaded', () => {
         renderHeader(state);
     });
 
-    headerStatus.addEventListener('click', () => {
+    headerStatus.addEventListener('click', (e) => {
+        e.stopPropagation(); // Предотвращаем срабатывание клика на headerInfo
         const state = appData[appData.currentMode];
         if (appData.currentMode !== 'personal') {
             const newStatus = prompt('Введите новый статус:', state.header.status);
