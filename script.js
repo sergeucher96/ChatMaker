@@ -349,7 +349,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeBtn.addEventListener('click', setTime);
     chatScreen.addEventListener('click', (e) => { const messageEl = e.target.closest('.message'); if (messageEl && messageEl.dataset.messageId) { changeMessageStatus(Number(messageEl.dataset.messageId)); } });
     document.addEventListener('click', (e) => { if ( colorPalette.classList.contains('visible') && !changeBgBtn.contains(e.target) && !colorPalette.contains(e.target) ) { colorPalette.classList.remove('visible'); } });
-    exportPreviewOverlay.addEventListener('click', () => { exportPreviewOverlay.classList.remove('visible'); });
 
     // Обработчики для шапки
     headerInfo.addEventListener('click', () => {
