@@ -1,16 +1,12 @@
-// --- ИНТЕГРАЦИЯ С TELEGRAM (выполняется до загрузки DOM) ---
-if (window.Telegram && window.Telegram.WebApp) {
-    window.Telegram.WebApp.ready();
-    window.Telegram.WebApp.expand();
-}
-
 document.addEventListener('DOMContentLoaded', () => {
-    
-    // Адаптация под тему Telegram
+    // --- ИНТЕГРАЦИЯ С TELEGRAM ---
     if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
+        tg.ready();
+        
         function applyTheme() {
             document.documentElement.className = tg.colorScheme === 'dark' ? 'dark-mode' : '';
+            document.body.style.backgroundColor = tg.themeParams.bg_color || '';
         }
         tg.onEvent('themeChanged', applyTheme);
         applyTheme();
@@ -35,12 +31,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportPreviewOverlay = document.getElementById('export-preview-overlay');
     const exportPreviewImg = document.getElementById('export-preview-img');
 
-    // --- Фиксация высоты для мобильных устройств ---
+    // --- Фиксация высоты ---
     function setFixedViewportHeight() {
         appContainer.style.height = `${window.innerHeight}px`;
     }
     window.addEventListener('resize', setFixedViewportHeight);
-    setFixedViewportHeight(); // Вызываем сразу
 
     // --- Данные ---
     const backgroundOptions = [ { id: 'bg1', value: `url("1.jpg")` }, { id: 'bg2', value: `url("2.jpg")` }, { id: 'bg3', value: `url("3.jpg")` }, { id: 'bg4', value: `url("4.jpg")` }, { id: 'bg5', value: `url("5.jpg")` }, { id: 'bg6', value: `url("6.jpg")` }, { id: 'bg7', value: `url("7.jpg")` }, { id: 'bg8', value: `url("8.jpg")` }, { id: 'bg9', value: `url("9.jpg")` }, { id: 'bg10', value: `url("10.jpg")` } ];
@@ -105,8 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
             wrapper.appendChild(messageEl);
             chatScreen.appendChild(wrapper);
         });
-        chatScreen.scrollTop = chatScreen.scrollHeight;
-    }
+ 
     function sendMessage() {
         const text = messageInput.value.trim(); if (!text) return;
         const state = appData[appData.currentMode];
@@ -184,26 +178,63 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     async function exportChat() {
+        const tg = window.Telegram.WebApp;
+        if (!tg || !tg.initData) {
+            alert("Эта функция работает только внутри Telegram.");
+            return;
+        }
+
         const originalButtonText = exportBtn.textContent;
         exportBtn.disabled = true;
         exportBtn.textContent = 'Создание...';
 
         try {
             const finalCanvas = await createFinalCanvas();
-            const imageUrl = finalCanvas.toDataURL("image/png");
-            
-            exportPreviewImg.src = imageUrl;
-            exportPreviewOverlay.classList.add('visible');
+            exportBtn.textContent = 'Отправка...';
+
+            finalCanvas.toBlob(async (blob) => {
+                if (!blob) {
+                    tg.showAlert("Ошибка: не удалось создать изображение.");
+                    exportBtn.disabled = false;
+                    exportBtn.textContent = originalButtonText;
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('photo', blob, 'chat-story.png');
+                formData.append('initData', tg.initData);
+
+                try {
+                    // *** ИСПРАВЛЕННАЯ СТРОКА ***
+                    const response = await fetch('https://chatmaker-gz1e.onrender.com/upload', {
+                        method: 'POST',
+                        body: formData,
+                    });
+
+                    if (response.ok) {
+                        tg.showAlert('Картинка отправлена вам в чат! Теперь ее можно переслать.');
+                        tg.close();
+                    } else {
+                        const errorData = await response.json();
+                        tg.showAlert(`Ошибка отправки: ${errorData.error || 'Сервер не отвечает.'}`);
+                    }
+                } catch (networkError) {
+                    console.error("Сетевая ошибка:", networkError);
+                    tg.showAlert('Сетевая ошибка. Не удалось связаться с сервером.');
+                } finally {
+                    exportBtn.disabled = false;
+                    exportBtn.textContent = originalButtonText;
+                }
+            }, 'image/jpeg', 0.85);
 
         } catch (err) {
             console.error("Ошибка при создании изображения:", err);
-            alert("Произошла ошибка при создании изображения.");
-        } finally {
+            tg.showAlert("Произошла ошибка при создании изображения.");
             exportBtn.disabled = false;
             exportBtn.textContent = originalButtonText;
         }
     }
-
+    
     // --- Остальные функции и обработчики ---
     function switchMode(newMode) { if (appData.currentMode === newMode) return; appData.currentMode = newMode; document.querySelectorAll('.mode-btn').forEach(btn => { btn.classList.toggle('active', btn.dataset.mode === newMode); }); renderAll(); saveState(); }
     function renderAll() { const state = appData[appData.currentMode]; renderMessages(state); updateSenderSelector(state); changeBackground(state.currentBackground, false); }
@@ -283,4 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadState();
     renderColorPalette();
     switchMode(appData.currentMode);
-});
+    setFixedViewportHeight();
+}});
+
+
