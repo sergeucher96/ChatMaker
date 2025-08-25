@@ -13,7 +13,6 @@ from aiogram.types import MenuButtonWebApp, WebAppInfo
 
 # --- НАСТРОЙКИ ---
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-# Убедись, что здесь правильная ссылка на твой сайт
 WEB_APP_URL = "https://sergeucher96.github.io/ChatMaker/" 
 WEB_SERVER_HOST = "0.0.0.0"
 WEB_SERVER_PORT = int(os.getenv("PORT", 10000))
@@ -23,7 +22,7 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 app = web.Application()
 
-# --- ОБРАБОТЧИК КОМАНДЫ /start ---
+# --- ОБРАБОТЧИКИ БОТА ---
 @dp.message(CommandStart())
 async def command_start_handler(message: types.Message):
     await bot.set_chat_menu_button(
@@ -74,46 +73,26 @@ async def upload_photo_handler(request: web.Request):
         print(f"Ошибка при загрузке: {e}")
         return web.json_response({'error': 'Ошибка сервера.'}, status=500)
 
-# --- НОВЫЙ ОБРАБОТЧИК ДЛЯ СООБЩЕНИЙ ОТ TELEGRAM (ВЕБХУК) ---
-async def webhook_handler(request: web.Request):
-    update_data = await request.json()
-    update = types.Update(**update_data)
-    await dp.feed_update(bot=bot, update=update)
-    return web.Response()
-
-# --- ФУНКЦИЯ ЗАПУСКА ---
-async def on_startup(app_instance):
-    """Действия при старте сервера"""
-    webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{BOT_TOKEN}"
-    await bot.set_webhook(webhook_url)
-    print(f"Вебхук установлен на: {webhook_url}")
-
-async def main():
+# --- НОВАЯ, ПРАВИЛЬНАЯ ЛОГИКА ЗАПУСКА ---
+async def on_startup(bot_instance: Bot):
     # Настройка CORS
     cors = aiohttp_cors.setup(app, defaults={
         "*": aiohttp_cors.ResourceOptions(allow_credentials=True, expose_headers="*", allow_headers="*")
     })
-    
-    # "Оборачиваем" наши обработчики в правила CORS
     upload_route = app.router.add_post('/upload', upload_photo_handler)
     cors.add(upload_route)
-    
-    # Добавляем маршрут для вебхука Telegram
-    webhook_route = app.router.add_post(f'/{BOT_TOKEN}', webhook_handler)
-    cors.add(webhook_route)
-
-    # Добавляем действия при старте
-    app.on_startup.append(on_startup)
     
     # Запускаем веб-сервер
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, host=WEB_SERVER_HOST, port=WEB_SERVER_PORT)
     await site.start()
-    
     print(f"Сервер слушает на {WEB_SERVER_HOST}:{WEB_SERVER_PORT}")
-    await asyncio.Event().wait()
 
+async def main():
+    # Удаляем вебхуки и запускаем polling вместе с веб-сервером
+    await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(bot, on_startup=on_startup)
 
 if __name__ == '__main__':
     print("Запуск приложения...")
