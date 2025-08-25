@@ -264,12 +264,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // --- ИСПРАВЛЕННАЯ ФУНКЦИЯ ---
     function resetChat() { 
         if (confirm('Удалить все сообщения?')) { 
             const state = appData[appData.currentMode]; 
-            state.messages = []; 
-            // Сбрасываем отправителя на первого в списке (обычно это "Вы")
+            state.messages = [];
             state.selectedParticipantId = state.participants[0].id;
             renderAll(); 
             saveState(); 
@@ -357,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
     headerInfo.addEventListener('click', () => {
         const state = appData[appData.currentMode];
         const newName = prompt('Введите новое имя:', state.header.name);
-        if (newName && newName.trim()) {
+        if (newName) {
             state.header.name = newName.trim();
             saveState();
             renderHeader(state);
