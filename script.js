@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tg = window.Telegram.WebApp;
         function applyTheme() {
             document.documentElement.className = tg.colorScheme === 'dark' ? 'dark-mode' : '';
-            document.body.style.backgroundColor = tg.themeParams.bg_color;
+            // Цвет фона body теперь устанавливается автоматически из CSS через переменные, JS не нужен
         }
         tg.onEvent('themeChanged', applyTheme);
         applyTheme();
@@ -42,8 +42,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const headerStatus = document.getElementById('header-status');
     const exportWrapper = document.getElementById('export-wrapper');
 
-    // --- Фиксация высоты ---
-    function setFixedViewportHeight() { appContainer.style.height = `${window.innerHeight}px`; }
+    // --- Фиксация высоты для мобильных устройств ---
+    function setFixedViewportHeight() {
+        appContainer.style.height = `${window.innerHeight}px`;
+    }
     window.addEventListener('resize', setFixedViewportHeight);
 
     // --- Данные ---
@@ -61,12 +63,12 @@ document.addEventListener('DOMContentLoaded', () => {
             personal: { 
                 header: { name: 'Сереженька', avatar: avatarOptions[0], status: statusOptions[1] },
                 participants: [ { id: 1, name: 'Вы', type: 'sent' }, { id: 2, name: 'Собеседник', type: 'received' } ], 
-                messages: [], nextParticipantId: 3, selectedParticipantId: 1, currentBackground: backgroundOptions[0].value 
+                messages: [], nextParticipantId: 3, selectedParticipantId: 1, currentBackground: 'var(--tg-bg-color)'
             },
             group: { 
                 header: { name: 'Рабочий чат', avatar: 'РЧ', status: '3 участника' },
                 participants: [ { id: 1, name: 'Вы', type: 'sent' }, { id: 2, name: 'Анна', type: 'received' }, { id: 3, name: 'Павел', type: 'received' } ], 
-                messages: [], nextParticipantId: 4, selectedParticipantId: 1, currentBackground: backgroundOptions[0].value 
+                messages: [], nextParticipantId: 4, selectedParticipantId: 1, currentBackground: 'var(--tg-bg-color)'
             }
         };
     }
@@ -79,10 +81,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Рендеринг и основные функции ---
     function renderHeader(state) {
-        const headerState = state.header;
-        headerName.textContent = headerState.name;
-        headerAvatar.textContent = headerState.avatar;
-        headerStatus.textContent = headerState.status;
+        headerName.textContent = state.header.name;
+        headerAvatar.textContent = state.header.avatar;
+        headerStatus.textContent = state.header.status;
     }
 
     function renderMessages(state) {
@@ -128,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         chatScreen.scrollTop = chatScreen.scrollHeight;
     }
-
+    
     function sendMessage() {
         const text = messageInput.value.trim(); if (!text) return;
         const state = appData[appData.currentMode];
@@ -138,17 +139,15 @@ document.addEventListener('DOMContentLoaded', () => {
         messageInput.value = ''; messageInput.style.height = 'auto';
         renderMessages(state); saveState();
     }
-
+    
     function setTime() {
         const newTime = prompt('Введите время (ЧЧ:ММ):', appData.currentTime);
         if (newTime && newTime.match(/^\d{1,2}:\d{2}$/)) {
             appData.currentTime = newTime;
             saveState();
-        } else if (newTime) {
-            alert('Неверный формат времени.');
-        }
+        } else if (newTime) { alert('Неверный формат времени.'); }
     }
-
+    
     function changeMessageStatus(id) {
         const state = appData[appData.currentMode];
         const message = state.messages.find(m => m.id === id);
@@ -156,13 +155,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const statuses = ['delivered', 'read', 'sent', 'none'];
         const currentIndex = statuses.indexOf(message.status);
         message.status = statuses[(currentIndex + 1) % statuses.length];
-        renderMessages(state);
-        saveState();
+        renderMessages(state); saveState();
     }
 
     async function createFinalCanvas() {
         const canvas = await html2canvas(exportWrapper, {
-            scale: 2, useCORS: true,
+            scale: 2,
+            useCORS: true,
             backgroundColor: window.getComputedStyle(document.body).backgroundColor
         });
         
@@ -177,18 +176,57 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     async function exportChat() {
+        const tg = window.Telegram.WebApp;
+        if (!tg || !tg.initData) {
+            alert("Эта функция работает только внутри Telegram.");
+            return;
+        }
+
         const originalButtonText = exportBtn.textContent;
         exportBtn.disabled = true;
         exportBtn.textContent = 'Создание...';
+
         try {
             const finalCanvas = await createFinalCanvas();
-            const imageUrl = finalCanvas.toDataURL("image/png");
-            exportPreviewImg.src = imageUrl;
-            exportPreviewOverlay.classList.add('visible');
+            exportBtn.textContent = 'Отправка...';
+
+            finalCanvas.toBlob(async (blob) => {
+                if (!blob) {
+                    tg.showAlert("Ошибка: не удалось создать изображение.");
+                    exportBtn.disabled = false;
+                    exportBtn.textContent = originalButtonText;
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('photo', blob, 'chat-story.png');
+                formData.append('initData', tg.initData);
+
+                try {
+                    const response = await fetch('https://chatmaker-gz1e.onrender.com/upload', {
+                        method: 'POST',
+                        body: formData,
+                    });
+
+                    if (response.ok) {
+                        tg.showAlert('Картинка отправлена вам в чат!');
+                        tg.close();
+                    } else {
+                        const errorData = await response.json();
+                        tg.showAlert(`Ошибка отправки: ${errorData.error || 'Сервер не отвечает.'}`);
+                    }
+                } catch (networkError) {
+                    console.error("Сетевая ошибка:", networkError);
+                    tg.showAlert('Сетевая ошибка. Не удалось связаться с сервером.');
+                } finally {
+                    exportBtn.disabled = false;
+                    exportBtn.textContent = originalButtonText;
+                }
+            }, 'image/jpeg', 0.9);
+
         } catch (err) {
             console.error("Ошибка при создании изображения:", err);
-            alert("Произошла ошибка.");
-        } finally {
+            tg.showAlert("Произошла ошибка при создании изображения.");
             exportBtn.disabled = false;
             exportBtn.textContent = originalButtonText;
         }
@@ -208,20 +246,20 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.mode-btn').forEach(btn => { 
             btn.classList.toggle('active', btn.dataset.mode === newMode); 
         }); 
-        renderAll(); // <<-- ИСПРАВЛЕНО: renderAll() содержит все нужные обновления
+        renderAll();
         saveState(); 
     }
     
     function changeBackground(bgValue, shouldSave = true) { 
         const state = appData[appData.currentMode]; 
         state.currentBackground = bgValue; 
-        chatScreen.style.background = bgValue; 
-        chatScreen.style.backgroundSize = 'cover'; 
+        chatScreen.style.backgroundImage = bgValue;
+        chatScreen.style.backgroundSize = 'cover';
         chatScreen.style.backgroundPosition = 'center'; 
         document.querySelectorAll('.color-swatch').forEach(swatch => { 
             swatch.classList.toggle('active', swatch.dataset.bg === bgValue); 
         }); 
-        if (shouldSave) saveState(); // <<-- ИСПРАВЛЕНО: сохранение состояния при смене фона
+        if (shouldSave) saveState();
     }
 
     function renderColorPalette() {
@@ -320,9 +358,11 @@ document.addEventListener('DOMContentLoaded', () => {
             colorPalette.classList.remove('visible');
         }
     });
-    exportPreviewOverlay.addEventListener('click', () => { exportPreviewOverlay.classList.remove('visible'); });
+    
+    exportPreviewOverlay.addEventListener('click', () => {
+        exportPreviewOverlay.classList.remove('visible');
+    });
 
-    // ИСПРАВЛЕННЫЕ ОБРАБОТЧИКИ ДЛЯ ШАПКИ
     headerName.addEventListener('click', () => {
         const state = appData[appData.currentMode];
         const newName = prompt('Введите новое имя:', state.header.name);
@@ -332,6 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderHeader(state);
         }
     });
+
     headerAvatar.addEventListener('click', () => {
         if (appData.currentMode !== 'personal') return;
         const state = appData.personal;
@@ -340,6 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saveState();
         renderHeader(state);
     });
+
     headerStatus.addEventListener('click', () => {
         if (appData.currentMode !== 'personal') return;
         const state = appData.personal;
