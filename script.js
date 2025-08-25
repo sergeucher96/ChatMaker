@@ -161,8 +161,6 @@ document.addEventListener('DOMContentLoaded', () => {
             useCORS: true,
             backgroundColor: window.getComputedStyle(document.body).backgroundColor
         });
-        
-        // Возвращаем canvas как есть, без изменения размера
         return canvas;
     }
     
@@ -269,6 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateSenderSelector(state) { const selected = state.participants.find(p => p.id === state.selectedParticipantId); senderSelectorBtn.textContent = selected ? selected.name : 'Выбрать'; }
     function selectParticipant(id) { const state = appData[appData.currentMode]; state.selectedParticipantId = id; updateSenderSelector(state); participantsModalOverlay.classList.remove('visible'); saveState(); }
     
+    // --- ВОССТАНОВЛЕННЫЕ ФУНКЦИИ ---
     function openParticipantsModal() {
         const state = appData.group; 
         participantsList.innerHTML = '';
@@ -322,6 +321,8 @@ document.addEventListener('DOMContentLoaded', () => {
             selectParticipant(newParticipant.id); 
         } 
     }
+    // --- КОНЕЦ ВОССТАНОВЛЕННЫХ ФУНКЦИЙ ---
+
 
     // --- ОБРАБОТЧИКИ СОБЫТИЙ ---
     modeSwitcher.addEventListener('click', (e) => { if (e.target.classList.contains('mode-btn')) switchMode(e.target.dataset.mode); });
