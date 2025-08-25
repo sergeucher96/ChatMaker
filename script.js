@@ -1,18 +1,12 @@
-// --- ИНТЕГРАЦИЯ С TELEGRAM ---
-if (window.Telegram && window.Telegram.WebApp) {
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
-    tg.setHeaderColor('bg_color');
-}
-
 document.addEventListener('DOMContentLoaded', () => {
-    
-    // Адаптация под тему Telegram
+    // --- ИНТЕГРАЦИЯ С TELEGRAM ---
     if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
+        tg.ready();
+        
         function applyTheme() {
             document.documentElement.className = tg.colorScheme === 'dark' ? 'dark-mode' : '';
+            document.body.style.backgroundColor = tg.themeParams.bg_color || '';
         }
         tg.onEvent('themeChanged', applyTheme);
         applyTheme();
@@ -34,21 +28,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const addParticipantModalBtn = document.getElementById('add-participant-modal-btn');
     const resetChatBtn = document.getElementById('reset-chat-btn');
     const setTimeBtn = document.getElementById('set-time-btn');
-    const headerAvatar = document.getElementById('header-avatar');
-    const headerInfo = document.getElementById('header-info');
-    const headerName = document.getElementById('header-name');
-    const headerStatus = document.getElementById('header-status');
-    const exportWrapper = document.getElementById('export-wrapper');
+    const exportPreviewOverlay = document.getElementById('export-preview-overlay');
+    const exportPreviewImg = document.getElementById('export-preview-img');
 
     // --- Фиксация высоты ---
-    function setFixedViewportHeight() { appContainer.style.height = `${window.innerHeight}px`; }
+    function setFixedViewportHeight() {
+        appContainer.style.height = `${window.innerHeight}px`;
+    }
     window.addEventListener('resize', setFixedViewportHeight);
 
     // --- Данные ---
     const backgroundOptions = [ { id: 'bg1', value: `url("1.jpg")` }, { id: 'bg2', value: `url("2.jpg")` }, { id: 'bg3', value: `url("3.jpg")` }, { id: 'bg4', value: `url("4.jpg")` }, { id: 'bg5', value: `url("5.jpg")` }, { id: 'bg6', value: `url("6.jpg")` }, { id: 'bg7', value: `url("7.jpg")` }, { id: 'bg8', value: `url("8.jpg")` }, { id: 'bg9', value: `url("9.jpg")` }, { id: 'bg10', value: `url("10.jpg")` } ];
     const nameColors = ['#ca6052', '#3e95c5', '#5eb44f', '#d7894a', '#8c62a5', '#4e9b95', '#d4769a', '#cb823f'];
-    const avatarOptions = ["С", "А", "П", "Г"];
-    const statusOptions = ["в сети", "был(а) недавно", "был(а) в этом месяце", "печатает...", "записывает аудио..."];
     
     // --- Состояние приложения ---
     let appData = {};
@@ -56,16 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function getInitialState() {
         return {
             currentMode: 'personal', currentTime: '12:30',
-            personal: { 
-                header: { name: 'Сереженька', avatar: avatarOptions[0], status: statusOptions[1] },
-                participants: [ { id: 1, name: 'Вы', type: 'sent' }, { id: 2, name: 'Собеседник', type: 'received' } ], 
-                messages: [], nextParticipantId: 3, selectedParticipantId: 1, currentBackground: 'transparent'
-            },
-            group: { 
-                header: { name: 'Рабочий чат', avatar: 'РЧ', status: '3 участника' },
-                participants: [ { id: 1, name: 'Вы', type: 'sent' }, { id: 2, name: 'Анна', type: 'received' }, { id: 3, name: 'Павел', type: 'received' } ], 
-                messages: [], nextParticipantId: 4, selectedParticipantId: 1, currentBackground: 'transparent'
-            }
+            personal: { participants: [ { id: 1, name: 'Вы', type: 'sent' }, { id: 2, name: 'Собеседник', type: 'received' } ], messages: [], nextParticipantId: 3, selectedParticipantId: 1, currentBackground: backgroundOptions[0].value },
+            group: { participants: [ { id: 1, name: 'Вы', type: 'sent' }, { id: 2, name: 'Анна', type: 'received' }, { id: 3, name: 'Павел', type: 'received' } ], messages: [], nextParticipantId: 4, selectedParticipantId: 1, currentBackground: backgroundOptions[0].value }
         };
     }
     
@@ -76,12 +59,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Рендеринг и основные функции ---
-    function renderHeader(state) {
-        headerName.textContent = state.header.name;
-        headerAvatar.textContent = state.header.avatar;
-        headerStatus.textContent = state.header.status;
-    }
-
     function renderMessages(state) {
         chatScreen.innerHTML = ''; 
         state.messages.forEach(msg => {
@@ -121,11 +98,10 @@ document.addEventListener('DOMContentLoaded', () => {
             messageEl.appendChild(contentEl);
             messageEl.appendChild(metaEl);
             wrapper.appendChild(messageEl);
-            chatScreen.appendChild(wrapper);
+            chatScreen.prepend(wrapper);
         });
-        chatScreen.scrollTop = chatScreen.scrollHeight;
+         chatScreen.scrollTop = chatScreen.scrollHeight;
     }
-    
     function sendMessage() {
         const text = messageInput.value.trim(); if (!text) return;
         const state = appData[appData.currentMode];
@@ -135,33 +111,71 @@ document.addEventListener('DOMContentLoaded', () => {
         messageInput.value = ''; messageInput.style.height = 'auto';
         renderMessages(state); saveState();
     }
-    
     function setTime() {
-        const newTime = prompt('Введите время (ЧЧ:ММ):', appData.currentTime);
+        const newTime = prompt('Введите время для следующих сообщений (например, 21:45):', appData.currentTime);
         if (newTime && newTime.match(/^\d{1,2}:\d{2}$/)) {
             appData.currentTime = newTime;
             saveState();
-        } else if (newTime) { alert('Неверный формат времени.'); }
+        } else if (newTime) {
+            alert('Неверный формат времени. Используйте ЧЧ:ММ.');
+        }
     }
-    
     function changeMessageStatus(id) {
         const state = appData[appData.currentMode];
         const message = state.messages.find(m => m.id === id);
         if (!message) return;
         const statuses = ['delivered', 'read', 'sent', 'none'];
         const currentIndex = statuses.indexOf(message.status);
-        message.status = statuses[(currentIndex + 1) % statuses.length];
-        renderMessages(state); saveState();
+        const nextIndex = (currentIndex + 1) % statuses.length;
+        message.status = statuses[nextIndex];
+        renderMessages(state);
+        saveState();
     }
-
     async function createFinalCanvas() {
-        const bgColor = window.getComputedStyle(document.body).backgroundColor;
-        const canvas = await html2canvas(exportWrapper, {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: bgColor
-        });
-        return canvas;
+        const finalCanvas = document.createElement('canvas');
+        const ctx = finalCanvas.getContext('2d');
+        const exportWidth = 1080;
+        const exportHeight = 1920;
+        finalCanvas.width = exportWidth;
+        finalCanvas.height = exportHeight;
+
+        const state = appData[appData.currentMode];
+        const bgValue = state.currentBackground;
+        const urlMatch = bgValue.match(/url\("(.+?)"\)/);
+
+        if (urlMatch) {
+            const img = new Image();
+            img.src = urlMatch[1];
+            await new Promise(resolve => { img.onload = resolve; });
+            ctx.drawImage(img, 0, 0, exportWidth, exportHeight);
+        }
+
+        const messageElements = Array.from(chatScreen.querySelectorAll('.message-wrapper'));
+        const messageCanvases = await Promise.all(messageElements.map(el =>
+            html2canvas(el, { scale: 3, backgroundColor: null, useCORS: true })
+        ));
+
+        let currentY = 60;
+        const sidePadding = 45;
+        const messageGap = 6;
+        
+        for (let i = 0; i < messageCanvases.length; i++) {
+            const msgCanvas = messageCanvases[i];
+            const el = messageElements[i];
+            let xPosition = sidePadding;
+            if (el.classList.contains('sent')) {
+                xPosition = exportWidth - msgCanvas.width - sidePadding;
+            }
+            ctx.drawImage(msgCanvas, xPosition, currentY);
+            currentY += msgCanvas.height + messageGap;
+        }
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.font = 'bold 32px -apple-system, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('by Chat Story Maker', exportWidth / 2, exportHeight - 60);
+
+        return finalCanvas;
     }
     
     async function exportChat() {
@@ -192,13 +206,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 formData.append('initData', tg.initData);
 
                 try {
+                    // *** ИСПРАВЛЕННАЯ СТРОКА ***
                     const response = await fetch('https://chatmaker-gz1e.onrender.com/upload', {
                         method: 'POST',
                         body: formData,
                     });
 
                     if (response.ok) {
-                        tg.showAlert('Картинка отправлена вам в чат!');
+                        tg.showAlert('Картинка отправлена вам в чат! Теперь ее можно переслать.');
                         tg.close();
                     } else {
                         const errorData = await response.json();
@@ -211,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     exportBtn.disabled = false;
                     exportBtn.textContent = originalButtonText;
                 }
-            }, 'image/jpeg', 0.9);
+            }, 'image/jpeg', 0.85);
 
         } catch (err) {
             console.error("Ошибка при создании изображения:", err);
@@ -220,65 +235,16 @@ document.addEventListener('DOMContentLoaded', () => {
             exportBtn.textContent = originalButtonText;
         }
     }
-
-    function renderAll() { 
-        const state = appData[appData.currentMode]; 
-        renderHeader(state);
-        renderMessages(state); 
-        updateSenderSelector(state); 
-        changeBackground(state.currentBackground, false); 
-    }
-
-    function switchMode(newMode) { 
-        if (appData.currentMode === newMode) return; 
-        appData.currentMode = newMode; 
-        document.querySelectorAll('.mode-btn').forEach(btn => { 
-            btn.classList.toggle('active', btn.dataset.mode === newMode); 
-        }); 
-        renderAll();
-        saveState(); 
-    }
     
-    function changeBackground(bgValue, shouldSave = true) { 
-        const state = appData[appData.currentMode]; 
-        state.currentBackground = bgValue; 
-        chatScreen.style.backgroundImage = bgValue;
-        chatScreen.style.backgroundSize = 'cover';
-        chatScreen.style.backgroundPosition = 'center'; 
-        document.querySelectorAll('.color-swatch').forEach(swatch => { 
-            swatch.classList.toggle('active', swatch.dataset.bg === bgValue); 
-        }); 
-        if (shouldSave) saveState();
-    }
-
-    function renderColorPalette() {
-        colorPalette.innerHTML = '';
-        backgroundOptions.forEach(bg => {
-            const swatch = document.createElement('div');
-            swatch.className = 'color-swatch';
-            swatch.dataset.bg = bg.value;
-            swatch.style.backgroundImage = bg.value;
-            colorPalette.appendChild(swatch);
-        });
-    }
-    
-    function resetChat() { 
-        if (confirm('Удалить все сообщения?')) { 
-            const state = appData[appData.currentMode]; 
-            state.messages = [];
-            state.selectedParticipantId = state.participants[0].id;
-            renderAll(); 
-            saveState(); 
-        } 
-    }
-
+    // --- Остальные функции и обработчики ---
+    function switchMode(newMode) { if (appData.currentMode === newMode) return; appData.currentMode = newMode; document.querySelectorAll('.mode-btn').forEach(btn => { btn.classList.toggle('active', btn.dataset.mode === newMode); }); renderAll(); saveState(); }
+    function renderAll() { const state = appData[appData.currentMode]; renderMessages(state); updateSenderSelector(state); changeBackground(state.currentBackground, false); }
+    function resetChat() { if (confirm('Вы уверены, что хотите удалить все сообщения в этом чате? Это действие нельзя отменить.')) { const state = appData[appData.currentMode]; state.messages = []; renderAll(); saveState(); } }
     function handleSenderSelection() { const state = appData[appData.currentMode]; if (appData.currentMode === 'personal') { const newId = state.selectedParticipantId === 1 ? 2 : 1; selectParticipant(newId); } else { openParticipantsModal(); } }
     function updateSenderSelector(state) { const selected = state.participants.find(p => p.id === state.selectedParticipantId); senderSelectorBtn.textContent = selected ? selected.name : 'Выбрать'; }
     function selectParticipant(id) { const state = appData[appData.currentMode]; state.selectedParticipantId = id; updateSenderSelector(state); participantsModalOverlay.classList.remove('visible'); saveState(); }
-    
     function openParticipantsModal() {
-        const state = appData.group; 
-        participantsList.innerHTML = '';
+        const state = appData.group; participantsList.innerHTML = '';
         state.participants.forEach(p => {
             const li = document.createElement('li');
             if(p.id === state.selectedParticipantId) li.classList.add('active-sender');
@@ -289,11 +255,10 @@ document.addEventListener('DOMContentLoaded', () => {
         addParticipantModalBtn.style.display = state.participants.length < 5 ? 'block' : 'none';
         participantsModalOverlay.classList.add('visible');
     }
-    
     function editParticipantName(id) {
         const state = appData.group;
         const participant = state.participants.find(p => p.id === id);
-        const newName = prompt(`Новое имя для "${participant.name}":`, participant.name);
+        const newName = prompt(`Введите новое имя для "${participant.name}":`, participant.name);
         if (newName && newName.trim()) {
             participant.name = newName.trim();
             saveState();
@@ -301,36 +266,21 @@ document.addEventListener('DOMContentLoaded', () => {
             openParticipantsModal();
         }
     }
-    
-    function deleteParticipant(id) { 
-        if (id === 1) return; 
-        const state = appData.group; 
-        if (state.participants.length <= 2) return; 
-        if (confirm('Удалить участника?')) { 
-            state.participants = state.participants.filter(p => p.id !== id); 
-            state.messages = state.messages.filter(m => m.participantId !== id); 
-            if (state.selectedParticipantId === id) { state.selectedParticipantId = state.participants[0].id; } 
-            saveState(); 
-            renderAll(); 
-            openParticipantsModal(); 
-        } 
-    }
-    
-    function addParticipant() { 
-        const state = appData.group; 
-        if (state.participants.length >= 5) return; 
-        const name = prompt('Имя нового участника:', `Участник ${state.participants.length}`); 
-        if (name && name.trim()) { 
-            const newParticipant = { id: state.nextParticipantId++, name: name.trim(), type: 'received' }; 
-            state.participants.push(newParticipant); 
-            saveState(); 
-            renderAll(); 
-            openParticipantsModal(); 
-            selectParticipant(newParticipant.id); 
-        } 
+    function deleteParticipant(id) { if (id === 1) return; const state = appData.group; if (state.participants.length <= 2) return; if (confirm('Вы уверены, что хотите удалить этого участника?')) { state.participants = state.participants.filter(p => p.id !== id); state.messages = state.messages.filter(m => m.participantId !== id); if (state.selectedParticipantId === id) { state.selectedParticipantId = state.participants[0].id; } saveState(); renderAll(); openParticipantsModal(); } }
+    function addParticipant() { const state = appData.group; if (state.participants.length >= 5) return; const name = prompt('Введите имя нового участника:', `Участник ${state.participants.length}`); if (name && name.trim()) { const newParticipant = { id: state.nextParticipantId++, name: name.trim(), type: 'received' }; state.participants.push(newParticipant); saveState(); renderAll(); openParticipantsModal(); selectParticipant(newParticipant.id); } }
+    function changeBackground(bgValue, shouldSave = true) { const state = appData[appData.currentMode]; state.currentBackground = bgValue; chatScreen.style.background = bgValue; chatScreen.style.backgroundSize = 'cover'; chatScreen.style.backgroundPosition = 'center'; document.querySelectorAll('.color-swatch').forEach(swatch => { swatch.classList.toggle('active', swatch.dataset.bg === bgValue); }); if (shouldSave) saveState(); }
+    function renderColorPalette() {
+        colorPalette.innerHTML = '';
+        backgroundOptions.forEach(bg => {
+            const swatch = document.createElement('div');
+            swatch.className = 'color-swatch';
+            swatch.dataset.bg = bg.value;
+            swatch.style.backgroundImage = bg.value;
+            colorPalette.appendChild(swatch);
+        });
     }
 
-    // --- ОБРАБОТЧИКИ СОБЫТИЙ ---
+    // --- Обработчики событий ---
     modeSwitcher.addEventListener('click', (e) => { if (e.target.classList.contains('mode-btn')) switchMode(e.target.dataset.mode); });
     sendBtn.addEventListener('click', sendMessage);
     messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }});
@@ -345,58 +295,28 @@ document.addEventListener('DOMContentLoaded', () => {
     colorPalette.addEventListener('click', (e) => { if (e.target.classList.contains('color-swatch')) changeBackground(e.target.dataset.bg); });
     resetChatBtn.addEventListener('click', resetChat);
     setTimeBtn.addEventListener('click', setTime);
-    chatScreen.addEventListener('click', (e) => { const messageEl = e.target.closest('.message'); if (messageEl && messageEl.dataset.messageId) { changeMessageStatus(Number(messageEl.dataset.messageId)); } });
-    document.addEventListener('click', (e) => { if ( colorPalette.classList.contains('visible') && !changeBgBtn.contains(e.target) && !colorPalette.contains(e.target) ) { colorPalette.classList.remove('visible'); } });
-
-    // Обработчики для шапки
-    headerInfo.addEventListener('click', () => {
-        const state = appData[appData.currentMode];
-        const newName = prompt('Введите новое имя:', state.header.name);
-        if (newName) {
-            state.header.name = newName.trim();
-            saveState();
-            renderHeader(state);
+    chatScreen.addEventListener('click', (e) => {
+        const messageEl = e.target.closest('.message');
+        if (messageEl && messageEl.dataset.messageId) {
+            changeMessageStatus(Number(messageEl.dataset.messageId));
         }
     });
-
-    headerAvatar.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const state = appData[appData.currentMode];
-        if (appData.currentMode !== 'personal') {
-            const newAvatar = prompt('Введите инициалы (до 2-х букв):', state.header.avatar);
-            if (newAvatar) {
-                state.header.avatar = newAvatar.trim().substring(0, 2);
-                saveState();
-                renderHeader(state);
-            }
-            return;
-        };
-        const currentIndex = avatarOptions.indexOf(state.header.avatar);
-        state.header.avatar = avatarOptions[(currentIndex + 1) % avatarOptions.length];
-        saveState();
-        renderHeader(state);
+    document.addEventListener('click', (e) => {
+        if ( colorPalette.classList.contains('visible') && !changeBgBtn.contains(e.target) && !colorPalette.contains(e.target) ) {
+            colorPalette.classList.remove('visible');
+        }
     });
-
-    headerStatus.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const state = appData[appData.currentMode];
-        if (appData.currentMode !== 'personal') {
-            const newStatus = prompt('Введите новый статус:', state.header.status);
-            if (newStatus) {
-                state.header.status = newStatus.trim();
-                saveState();
-                renderHeader(state);
-            }
-            return;
-        };
-        const currentIndex = statusOptions.indexOf(state.header.status);
-        state.header.status = statusOptions[(currentIndex + 1) % statusOptions.length];
-        saveState();
-        renderHeader(state);
+    
+    exportPreviewOverlay.addEventListener('click', () => {
+        exportPreviewOverlay.classList.remove('visible');
     });
 
     // --- ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ---
     loadState();
-    renderAll();
+    renderColorPalette();
+    switchMode(appData.currentMode);
     setFixedViewportHeight();
 });
+
+
+
