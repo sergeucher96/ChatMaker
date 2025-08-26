@@ -49,7 +49,73 @@ document.addEventListener('DOMContentLoaded', () => {
     function loadState() { const savedState = localStorage.getItem('chatStoryMakerState_v9'); appData = savedState ? JSON.parse(savedState) : getInitialState(); if (appData.group && !appData.group.hasOwnProperty('displayParticipantCount')) appData.group.displayParticipantCount = appData.group.participants.length; if (appData.group && !appData.group.hasOwnProperty('groupName')) appData.group.groupName = 'Групповой чат'; if (appData.personal && !appData.personal.hasOwnProperty('status')) appData.personal.status = statusOptions[0]; }
     function updateState(updater) { const changes = updater(appData); appData = { ...appData, ...changes }; saveState(); }
     function getParticipantDeclension(count) { const lastDigit = count % 10; const lastTwoDigits = count % 100; if (lastTwoDigits >= 11 && lastTwoDigits <= 19) return 'участников'; if (lastDigit === 1) return 'участник'; if (lastDigit >= 2 && lastDigit <= 4) return 'участника'; return 'участников'; }
+async function createFinalCanvas() {
+        const elementsToHide = [messageComposer, exportBtn];
+        const originalDisplays = elementsToHide.map(el => el.style.display);
+        const originalAppHeight = appContainer.style.height;
+        const originalChatOverflow = chatScreen.style.overflowY;
+        const originalChatHeight = chatScreen.style.height;
 
+        let finalCanvas;
+        try {
+            elementsToHide.forEach(el => el.style.display = 'none');
+            chatScreen.style.height = 'auto';
+            chatScreen.style.overflowY = 'visible';
+            appContainer.style.height = 'auto';
+            await new Promise(r => setTimeout(r, 50));
+
+            // Фиксированный размер 9:16
+            const canvasHeight = 1920;
+            const canvasWidth = 1080;
+
+            finalCanvas = await html2canvas(appContainer, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                height: canvasHeight,
+                width: canvasWidth
+            });
+        } finally {
+            elementsToHide.forEach((el, i) => el.style.display = originalDisplays[i]);
+            appContainer.style.height = originalAppHeight;
+            chatScreen.style.height = originalChatHeight;
+            chatScreen.style.overflowY = originalChatOverflow;
+        }
+        return finalCanvas;
+    }
+
+    // --- ЭКСПОРТ И ОТПРАВКА ---
+    async function exportChatDirectly() {
+        try {
+            const finalCanvas = await createFinalCanvas();
+            const blob = await new Promise(resolve => finalCanvas.toBlob(resolve, 'image/png'));
+
+            const initData = window.Telegram.WebApp.initData;
+
+            const formData = new FormData();
+            formData.append('photo', blob, 'story.png');
+            formData.append('initData', initData);
+
+            const response = await fetch('https://<твоя-render-url>/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            if(result.status === 'ok'){
+                alert('Ваша история отправлена в Telegram!');
+            } else {
+                alert('Ошибка отправки: ' + result.error);
+            }
+
+        } catch(e) {
+            console.error(e);
+            alert('Произошла ошибка при отправке истории.');
+        }
+    }
+
+    // --- ПРИВЯЗКА КНОПКИ ---
+    exportBtn.addEventListener('click', exportChatDirectly);
 
     // --- 4. РЕНДЕРИНГ ---
     function createMessageElement(msg, state) { const participant = state.participants.find(p => p.id === msg.participantId); if (!participant) return null; const wrapper = document.createElement('div'); wrapper.className = `message-wrapper ${participant.type}`; wrapper.dataset.messageId = msg.id; const messageEl = document.createElement('div'); messageEl.className = 'message'; if (appData.currentMode === 'group' && participant.type === 'received') { const headerEl = document.createElement('div'); headerEl.className = 'message-header'; const senderName = document.createElement('div'); senderName.className = 'sender-name'; senderName.textContent = participant.name; senderName.style.color = nameColors[(participant.id - 2) % nameColors.length]; const replyBtn = document.createElement('div'); replyBtn.className = 'reply-btn'; replyBtn.textContent = 'Ответить'; headerEl.appendChild(senderName); headerEl.appendChild(replyBtn); messageEl.appendChild(headerEl); } const contentEl = document.createElement('div'); contentEl.className = 'message-content'; contentEl.textContent = msg.text; const metaEl = document.createElement('div'); metaEl.className = 'message-meta'; const timeEl = document.createElement('span'); timeEl.textContent = msg.time; metaEl.appendChild(timeEl); if (msg.status && msg.status !== 'none') { const ticksEl = document.createElement('div'); ticksEl.className = 'message-ticks'; if (msg.status === 'read') ticksEl.classList.add('read'); if (msg.status === 'sent') { const tick1 = document.createElement('div'); tick1.className = 'tick tick-1'; ticksEl.appendChild(tick1); } if (msg.status === 'delivered' || msg.status === 'read') { const tick1 = document.createElement('div'); tick1.className = 'tick tick-1'; ticksEl.appendChild(tick1); const tick2 = document.createElement('div'); tick2.className = 'tick tick-2'; ticksEl.appendChild(tick2); } metaEl.appendChild(ticksEl); } contentEl.appendChild(metaEl); messageEl.appendChild(contentEl); wrapper.appendChild(messageEl); return wrapper; }
@@ -178,3 +244,4 @@ async function createFinalCanvas() {
 
     init();
 });
+
