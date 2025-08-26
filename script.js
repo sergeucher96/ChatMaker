@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const addParticipantModalBtn = getElement('add-participant-modal-btn');
     const resetChatBtn = getElement('reset-chat-btn');
     const setTimeBtn = getElement('set-time-btn');
+    // Оверлей для предпросмотра больше не нужен для основной логики, но оставим его для совместимости HTML
     const exportPreviewOverlay = getElement('export-preview-overlay');
     const exportPreviewImg = getElement('export-preview-img');
     const customModal = {
@@ -47,31 +48,25 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
     
-    // --- УПРАВЛЕНИЕ СОСТОЯНИЕМ (Ключевое изменение) ---
+    // --- УПРАВЛЕНИЕ СОСТОЯНИЕМ ---
     function saveState() { localStorage.setItem('chatStoryState_v2', JSON.stringify(appData)); }
     function loadState() {
         const savedState = localStorage.getItem('chatStoryState_v2');
         appData = savedState ? JSON.parse(savedState) : getInitialState();
     }
-    /**
-     * Централизованная функция для обновления состояния.
-     * @param {function} updater - Функция, которая получает текущее состояние и возвращает объект с изменениями.
-     */
     function updateState(updater) {
         const changes = updater(appData);
         appData = { ...appData, ...changes };
         saveState();
     }
 
-    // --- Рендеринг ---
+    // --- Рендеринг (без изменений) ---
     function createMessageElement(msg, state) {
         const participant = state.participants.find(p => p.id === msg.participantId);
         if (!participant) return null;
-
         const wrapper = document.createElement('div');
         wrapper.className = `message-wrapper ${participant.type}`;
         wrapper.dataset.messageId = msg.id;
-
         if (appData.currentMode === 'group' && participant.type === 'received') {
             const senderName = document.createElement('div');
             senderName.className = 'sender-name';
@@ -79,27 +74,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if(participant.id > 1) { senderName.style.color = nameColors[(participant.id - 2) % nameColors.length]; }
             wrapper.appendChild(senderName);
         }
-
         const messageEl = document.createElement('div');
         messageEl.className = 'message';
-        
         const contentEl = document.createElement('span');
         contentEl.className = 'message-content';
         contentEl.textContent = msg.text;
-
         const metaEl = document.createElement('div');
         metaEl.className = 'message-meta';
-
         const timeEl = document.createElement('span');
         timeEl.className = 'message-time';
         timeEl.textContent = msg.time;
         metaEl.appendChild(timeEl);
-
         if (participant.type === 'sent') {
             const ticksEl = document.createElement('div');
             ticksEl.className = 'message-ticks';
             if (msg.status === 'read') ticksEl.classList.add('read');
-            
             if (msg.status && msg.status !== 'none') {
                 const tick1 = document.createElement('div'); tick1.className = 'tick tick-1'; ticksEl.appendChild(tick1);
             }
@@ -108,13 +97,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             metaEl.appendChild(ticksEl);
         }
-
         messageEl.appendChild(contentEl);
         messageEl.appendChild(metaEl);
         wrapper.appendChild(messageEl);
         return wrapper;
     }
-
     function renderMessages(state) {
         chatScreen.innerHTML = ''; 
         state.messages.forEach(msg => {
@@ -123,23 +110,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         scrollToBottom();
     }
-
     function addMessageToDOM(msg, state) {
         const el = createMessageElement(msg, state);
         if (el) chatScreen.appendChild(el);
         scrollToBottom();
     }
-
     function updateMessageInDOM(msg, state) {
         const newElement = createMessageElement(msg, state);
         if (newElement) {
             const oldElement = chatScreen.querySelector(`.message-wrapper[data-message-id="${msg.id}"]`);
-            if (oldElement) {
-                oldElement.replaceWith(newElement);
-            }
+            if (oldElement) oldElement.replaceWith(newElement);
         }
     }
-
     function renderAll() {
         const state = appData[appData.currentMode];
         renderMessages(state);
@@ -147,12 +129,10 @@ document.addEventListener('DOMContentLoaded', () => {
         updateBackground(state.currentBackground);
         updateModeSwitcher();
     }
-    
     function updateSenderSelector(state) {
         const selected = state.participants.find(p => p.id === state.selectedParticipantId);
         senderSelectorBtn.textContent = selected ? selected.name : 'Выбрать';
     }
-
     function updateBackground(bgValue) {
         chatScreen.style.background = bgValue;
         chatScreen.style.backgroundSize = 'cover';
@@ -161,173 +141,105 @@ document.addEventListener('DOMContentLoaded', () => {
             swatch.classList.toggle('active', swatch.dataset.bg === bgValue);
         });
     }
-
     function updateModeSwitcher() {
         document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.mode === appData.currentMode);
         });
     }
-
     function scrollToBottom() {
         chatScreen.scrollTop = chatScreen.scrollHeight;
     }
 
-    // --- Основные функции приложения ---
+    // --- Основные функции приложения (без изменений) ---
     function sendMessage() {
         const text = messageInput.value.trim(); if (!text) return;
-        
         const state = appData[appData.currentMode];
         const participant = state.participants.find(p => p.id === state.selectedParticipantId);
-        
-        const newMessage = { 
-            id: Date.now(), 
-            text: text, 
-            participantId: state.selectedParticipantId, 
-            time: appData.currentTime, 
-            status: participant?.type === 'sent' ? 'sent' : 'none' 
-        };
-
+        const newMessage = { id: Date.now(), text: text, participantId: state.selectedParticipantId, time: appData.currentTime, status: participant?.type === 'sent' ? 'sent' : 'none' };
         const updatedMessages = [...state.messages, newMessage];
-        updateState(data => ({
-            ...data,
-            [data.currentMode]: { ...state, messages: updatedMessages }
-        }));
-        
+        updateState(data => ({ ...data, [data.currentMode]: { ...state, messages: updatedMessages } }));
         addMessageToDOM(newMessage, state);
         messageInput.value = ''; 
         messageInput.style.height = 'auto';
     }
-
     function changeMessageStatus(id) {
         const state = appData[appData.currentMode];
         const messageIndex = state.messages.findIndex(m => m.id === id);
         if (messageIndex === -1) return;
-
         const message = state.messages[messageIndex];
         const participant = state.participants.find(p => p.id === message.participantId);
-        if (participant?.type !== 'sent') return; // Статусы меняем только у исходящих
-
-        const statuses = ['sent', 'delivered', 'read', 'none']; // Логичный порядок
+        if (participant?.type !== 'sent') return;
+        const statuses = ['sent', 'delivered', 'read', 'none'];
         const currentIndex = statuses.indexOf(message.status);
         const nextIndex = (currentIndex + 1) % statuses.length;
         const newStatus = statuses[nextIndex];
-
         const updatedMessages = [...state.messages];
         const updatedMessage = { ...message, status: newStatus };
         updatedMessages[messageIndex] = updatedMessage;
-        
-        updateState(data => ({
-            ...data,
-            [data.currentMode]: { ...state, messages: updatedMessages }
-        }));
-
+        updateState(data => ({ ...data, [data.currentMode]: { ...state, messages: updatedMessages } }));
         updateMessageInDOM(updatedMessage, state);
     }
-    
     function switchMode(newMode) {
         if (appData.currentMode === newMode) return;
         updateState(data => ({ currentMode: newMode }));
         renderAll();
     }
-    
     function changeBackground(bgValue) {
         const state = appData[appData.currentMode];
-        updateState(data => ({
-            ...data,
-            [data.currentMode]: { ...state, currentBackground: bgValue }
-        }));
+        updateState(data => ({ ...data, [data.currentMode]: { ...state, currentBackground: bgValue } }));
         updateBackground(bgValue);
     }
-
     function selectParticipant(id) {
         const state = appData[appData.currentMode];
-        updateState(data => ({
-            ...data,
-            [data.currentMode]: { ...state, selectedParticipantId: id }
-        }));
+        updateState(data => ({ ...data, [data.currentMode]: { ...state, selectedParticipantId: id } }));
         updateSenderSelector(appData[appData.currentMode]);
         participantsModalOverlay.classList.remove('visible');
     }
-
     function addParticipant(name) {
         const state = appData.group;
         if (state.participants.length >= 5 || !name || !name.trim()) return;
-        
         const newParticipant = { id: state.nextParticipantId, name: name.trim(), type: 'received' };
-        
         const updatedParticipants = [...state.participants, newParticipant];
-        
-        updateState(data => ({
-            ...data,
-            group: { 
-                ...state, 
-                participants: updatedParticipants,
-                nextParticipantId: state.nextParticipantId + 1,
-                selectedParticipantId: newParticipant.id // Сразу выбираем нового
-            }
-        }));
-        
+        updateState(data => ({ ...data, group: { ...state, participants: updatedParticipants, nextParticipantId: state.nextParticipantId + 1, selectedParticipantId: newParticipant.id } }));
         renderAll();
         openParticipantsModal();
     }
-
     function editParticipantName(id, newName) {
         if (!newName || !newName.trim()) return;
         const state = appData.group;
-        
-        const updatedParticipants = state.participants.map(p => 
-            p.id === id ? { ...p, name: newName.trim() } : p
-        );
-
-        updateState(data => ({
-            ...data,
-            group: { ...state, participants: updatedParticipants }
-        }));
-
+        const updatedParticipants = state.participants.map(p => p.id === id ? { ...p, name: newName.trim() } : p);
+        updateState(data => ({ ...data, group: { ...state, participants: updatedParticipants } }));
         renderAll();
         openParticipantsModal();
     }
-
     function deleteParticipant(id) {
         if (id === 1) return;
         const state = appData.group;
         if (state.participants.length <= 2) return;
-
         const updatedParticipants = state.participants.filter(p => p.id !== id);
         const updatedMessages = state.messages.filter(m => m.participantId !== id);
         const newSelectedId = state.selectedParticipantId === id ? 1 : state.selectedParticipantId;
-        
-        updateState(data => ({
-            ...data,
-            group: { 
-                ...state, 
-                participants: updatedParticipants,
-                messages: updatedMessages,
-                selectedParticipantId: newSelectedId
-            }
-        }));
-
+        updateState(data => ({ ...data, group: { ...state, participants: updatedParticipants, messages: updatedMessages, selectedParticipantId: newSelectedId } }));
         renderAll();
         openParticipantsModal();
     }
 
     // --- Экспорт ---
     async function createFinalCanvas() {
+        // Эта функция остается без изменений
         const finalCanvas = document.createElement('canvas');
         const ctx = finalCanvas.getContext('2d');
         const exportWidth = 1080;
         const exportHeight = 1920;
         finalCanvas.width = exportWidth;
         finalCanvas.height = exportHeight;
-
         const state = appData[appData.currentMode];
         const bgValue = state.currentBackground;
         const urlMatch = bgValue.match(/url\("(.+?)"\)/);
-
         if (urlMatch) {
             try {
                 const img = new Image();
-                img.crossOrigin = "anonymous"; // Важно для canvas с внешними изображениями
+                img.crossOrigin = "anonymous";
                 img.src = urlMatch[1];
                 await new Promise((resolve, reject) => {
                     img.onload = resolve;
@@ -336,21 +248,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.drawImage(img, 0, 0, exportWidth, exportHeight);
             } catch (error) {
                 console.error(error);
-                // Можно нарисовать сплошной фон в случае ошибки
                 ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--app-bg').trim();
                 ctx.fillRect(0, 0, exportWidth, exportHeight);
             }
         }
-
         const messageElements = Array.from(chatScreen.querySelectorAll('.message-wrapper'));
         const messageCanvases = await Promise.all(messageElements.map(el =>
             html2canvas(el, { scale: 3, backgroundColor: null, useCORS: true })
         ));
-
         let currentY = 60;
         const sidePadding = 45;
         const messageGap = 6;
-        
         for (let i = 0; i < messageCanvases.length; i++) {
             const msgCanvas = messageCanvases[i];
             const el = messageElements[i];
@@ -361,40 +269,61 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.drawImage(msgCanvas, xPosition, currentY, msgCanvas.width / 3, msgCanvas.height / 3);
             currentY += (msgCanvas.height / 3) + messageGap;
         }
-        
         ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
         ctx.font = 'bold 32px -apple-system, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('by Chat Story Maker', exportWidth / 2, exportHeight - 60);
-
         return finalCanvas;
     }
     
+    // !!! --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ --- !!!
+    // Эта функция теперь отправляет данные боту
     async function exportChat() {
+        const tg = window.Telegram.WebApp;
+        if (!tg || !tg.sendData) {
+            showCustomAlert("Ошибка", "Функция отправки доступна только внутри Telegram.");
+            // Можно добавить старую логику с показом картинки как fallback
+            return;
+        }
+
         const originalButtonText = exportBtn.textContent;
         exportBtn.disabled = true;
         exportBtn.textContent = 'Создание...';
 
         try {
             const finalCanvas = await createFinalCanvas();
+            // Получаем данные картинки как data URL
             const imageUrl = finalCanvas.toDataURL("image/png");
-            exportPreviewImg.src = imageUrl;
-            exportPreviewOverlay.classList.add('visible');
+            
+            // Отделяем заголовок 'data:image/png;base64,' от самих данных
+            const base64Data = imageUrl.split(',')[1];
+            
+            exportBtn.textContent = 'Отправка...';
+
+            // Отправляем данные боту
+            tg.sendData(base64Data);
+            
+            // Telegram рекомендует закрывать WebApp после отправки данных
+            // tg.close(); // Раскомментируйте, если хотите, чтобы приложение закрывалось после отправки
+
         } catch (err) {
-            console.error("Ошибка при создании изображения:", err);
-            showCustomAlert("Ошибка", "Произошла ошибка при создании изображения. " + err.message);
+            console.error("Ошибка при создании или отправке изображения:", err);
+            showCustomAlert("Ошибка", "Произошла ошибка: " + err.message);
         } finally {
-            exportBtn.disabled = false;
-            exportBtn.textContent = originalButtonText;
+            // Кнопка останется неактивной, если приложение не закрывается
+            // Если вы не используете tg.close(), верните кнопке исходное состояние через пару секунд
+            setTimeout(() => {
+                exportBtn.disabled = false;
+                exportBtn.textContent = originalButtonText;
+            }, 2000);
         }
     }
 
-    // --- Модальные окна ---
+    // --- Модальные окна (без изменений) ---
     function showModal({ title, bodyHtml, buttons }) {
         customModal.title.textContent = title;
         customModal.body.innerHTML = bodyHtml;
         customModal.footer.innerHTML = '';
-
         buttons.forEach(btn => {
             const buttonEl = document.createElement('button');
             buttonEl.textContent = btn.text;
@@ -405,24 +334,14 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             customModal.footer.appendChild(buttonEl);
         });
-
         customModal.overlay.classList.add('visible');
         const input = customModal.body.querySelector('input');
         if (input) input.focus();
     }
-
-    function closeCustomModal() {
-        customModal.overlay.classList.remove('visible');
-    }
-
+    function closeCustomModal() { customModal.overlay.classList.remove('visible'); }
     function showCustomAlert(title, message) {
-        showModal({
-            title: title,
-            bodyHtml: `<p>${message}</p>`,
-            buttons: [{ text: 'OK', class: 'primary' }]
-        });
+        showModal({ title: title, bodyHtml: `<p>${message}</p>`, buttons: [{ text: 'OK', class: 'primary' }] });
     }
-    
     function handleSetTime() {
         showModal({
             title: 'Установить время',
@@ -444,7 +363,6 @@ document.addEventListener('DOMContentLoaded', () => {
             ]
         });
     }
-
     function handleResetChat() {
         showModal({
             title: 'Сбросить чат?',
@@ -456,17 +374,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     class: 'danger',
                     handler: () => {
                         const state = appData[appData.currentMode];
-                        updateState(data => ({
-                           ...data,
-                           [data.currentMode]: { ...state, messages: [] }
-                        }));
+                        updateState(data => ({ ...data, [data.currentMode]: { ...state, messages: [] } }));
                         renderMessages(appData[appData.currentMode]);
                     } 
                 }
             ]
         })
     }
-    
     function openParticipantsModal() {
         const state = appData.group; 
         participantsList.innerHTML = '';
@@ -483,6 +397,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Инициализация и обработчики событий ---
     function init() {
+        // Меняем текст на кнопке экспорта
+        exportBtn.textContent = 'Отправить боту';
+
         // Адаптация под тему Telegram
         if (window.Telegram && window.Telegram.WebApp) {
             const tg = window.Telegram.WebApp;
@@ -490,16 +407,10 @@ document.addEventListener('DOMContentLoaded', () => {
             tg.onEvent('themeChanged', applyTheme);
             applyTheme();
         }
-
-        // Фиксация высоты для мобильных устройств
         const setFixedViewportHeight = () => appContainer.style.height = `${window.innerHeight}px`;
         window.addEventListener('resize', setFixedViewportHeight);
         setFixedViewportHeight();
-
-        // Рендеринг палитры
-        colorPalette.innerHTML = backgroundOptions.map(bg => 
-            `<div class="color-swatch" data-bg='${bg.value}' style="background-image: ${bg.value};"></div>`
-        ).join('');
+        colorPalette.innerHTML = backgroundOptions.map(bg => `<div class="color-swatch" data-bg='${bg.value}' style="background-image: ${bg.value};"></div>`).join('');
 
         // Обработчики
         modeSwitcher.addEventListener('click', (e) => { if (e.target.classList.contains('mode-btn')) switchMode(e.target.dataset.mode); });
@@ -547,11 +458,8 @@ document.addEventListener('DOMContentLoaded', () => {
         exportPreviewOverlay.addEventListener('click', () => exportPreviewOverlay.classList.remove('visible'));
         customModal.overlay.addEventListener('click', (e) => { if(e.target === customModal.overlay) closeCustomModal(); })
 
-
-        // Загрузка данных и первый рендер
         loadState();
         renderAll();
     }
-
     init();
 });
