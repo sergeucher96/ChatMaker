@@ -1,4 +1,6 @@
 aiogram==3.3.0
 aiohttp==3.9.4
 aiohttp-cors==0.7.0
-# Pydantic не указывать явно — pip сам поставит версию 2.4.1–2.5.x, совместимую с aiogram
+aiofiles~=23.2.1
+certifi>=2023.7.22
+magic-filter>=1.0.12,<1.1
