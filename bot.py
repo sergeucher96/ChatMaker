@@ -39,7 +39,7 @@ def validate_init_data(init_data: str, bot_token: str):
         parsed_data = dict(parse_qsl(init_data))
         received_hash = parsed_data.pop('hash')
         data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(parsed_data.items()))
-        secret_key = hmac.new(b"WebAppData", bot_token.encode(), hashlib.sha256).digest()
+        secret_key = hmac.new("WebAppData".encode(), bot_token.encode(), hashlib.sha256).digest()
         calculated_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
         if calculated_hash == received_hash:
             return True, json.loads(parsed_data['user'])
