@@ -36,15 +36,21 @@ async def command_start_handler(message: types.Message):
 async def upload_photo_handler(request: web.Request):
     try:
         data = await request.post()
+        print("Received data:", data)
         photo_field = data.get('photo')
-        user_id = int(data.get('user_id', 0))
-
+        user_id_str = data.get('user_id')
         if not photo_field:
             return web.json_response({'error': 'Нет фото'}, status=400)
-        if not user_id:
+        if not user_id_str:
             return web.json_response({'error': 'Нет user_id'}, status=400)
+        try:
+            user_id = int(user_id_str)
+        except ValueError:
+            return web.json_response({'error': 'Некорректный user_id'}, status=400)
 
         photo_bytes = photo_field.file.read()
+        if not photo_bytes:
+            return web.json_response({'error': 'Пустое фото'}, status=400)
 
         await bot.send_photo(
             chat_id=user_id,
@@ -90,3 +96,4 @@ async def main():
 if __name__ == '__main__':
     print("Запуск приложения...")
     asyncio.run(main())
+
