@@ -85,34 +85,34 @@ async function createFinalCanvas() {
     }
 
     // --- ЭКСПОРТ И ОТПРАВКА ---
-    async function exportChatDirectly() {
-        try {
-            const finalCanvas = await createFinalCanvas();
-            const blob = await new Promise(resolve => finalCanvas.toBlob(resolve, 'image/png'));
+  async function exportChatDirectly() {
+    try {
+        const finalCanvas = await createFinalCanvas();
+        const blob = await new Promise(resolve => finalCanvas.toBlob(resolve, 'image/png'));
 
-            const initData = window.Telegram.WebApp.initData;
+        const tg = window.Telegram.WebApp;
+        const userId = tg.initDataUnsafe.user?.id;
 
-            const formData = new FormData();
-            formData.append('photo', blob, 'story.png');
-            formData.append('initData', initData);
+        const formData = new FormData();
+        formData.append('photo', blob, 'story.png');
+        formData.append('user_id', userId);
 
-            const response = await fetch('https://<твоя-render-url>/upload', {
-                method: 'POST',
-                body: formData
-            });
+        const response = await fetch('https://<твоя-render-url>/upload', {
+            method: 'POST',
+            body: formData
+        });
 
-            const result = await response.json();
-            if(result.status === 'ok'){
-                alert('Ваша история отправлена в Telegram!');
-            } else {
-                alert('Ошибка отправки: ' + result.error);
-            }
-
-        } catch(e) {
-            console.error(e);
-            alert('Произошла ошибка при отправке истории.');
+        const result = await response.json();
+        if (result.status === 'ok') {
+            alert('Ваша история отправлена в Telegram!');
+        } else {
+            alert('Ошибка отправки: ' + result.error);
         }
+    } catch (e) {
+        console.error(e);
+        alert('Произошла ошибка при отправке истории.');
     }
+}
 
     // --- ПРИВЯЗКА КНОПКИ ---
     exportBtn.addEventListener('click', exportChatDirectly);
@@ -244,4 +244,5 @@ async function createFinalCanvas() {
 
     init();
 });
+
 
