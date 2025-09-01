@@ -97,7 +97,7 @@ async function createFinalCanvas() {
         formData.append('photo', blob, 'story.png');
         formData.append('user_id', userId);
 
-        const response = await fetch('https://<твоя-render-url>/upload', {
+        const response = await fetch('https://chatmaker-gz1e.onrender.com/upload', {
             method: 'POST',
             body: formData
         });
@@ -244,5 +244,6 @@ async function createFinalCanvas() {
 
     init();
 });
+
 
 
