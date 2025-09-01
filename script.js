@@ -86,31 +86,52 @@ async function createFinalCanvas() {
 
     // --- ЭКСПОРТ И ОТПРАВКА ---
   async function exportChatDirectly() {
+    const tg = window.Telegram.WebApp;
+    const userId = tg.initDataUnsafe.user?.id;
+
+    if (!userId) {
+        alert("Не удалось получить ваш Telegram ID. Попробуйте открыть WebApp через Telegram.");
+        return;
+    }
+
     try {
+        // Блокируем кнопку и показываем процесс
+        exportBtn.disabled = true;
+        const originalText = exportBtn.textContent;
+        exportBtn.textContent = "Создание...";
+
+        // Создаём финальный Canvas
         const finalCanvas = await createFinalCanvas();
-        const blob = await new Promise(resolve => finalCanvas.toBlob(resolve, 'image/png'));
 
-        const tg = window.Telegram.WebApp;
-        const userId = tg.initDataUnsafe.user?.id;
+        // Преобразуем Canvas в Blob
+        const blob = await new Promise(resolve => finalCanvas.toBlob(resolve, "image/png"));
+        if (!blob) throw new Error("Не удалось создать изображение");
 
+        // Подготовка FormData
         const formData = new FormData();
         formData.append('photo', blob, 'story.png');
         formData.append('user_id', userId);
 
+        // Отправка на сервер
         const response = await fetch('https://chatmaker-gz1e.onrender.com/upload', {
             method: 'POST',
             body: formData
         });
 
         const result = await response.json();
+
         if (result.status === 'ok') {
-            alert('Ваша история отправлена в Telegram!');
+            alert("Ваша история успешно отправлена в Telegram!");
         } else {
-            alert('Ошибка отправки: ' + result.error);
+            alert("Ошибка отправки: " + (result.error || "неизвестная ошибка"));
         }
-    } catch (e) {
-        console.error(e);
-        alert('Произошла ошибка при отправке истории.');
+
+    } catch (err) {
+        console.error("Ошибка при отправке истории:", err);
+        alert("Произошла ошибка при отправке истории. Проверьте консоль.");
+    } finally {
+        exportBtn.disabled = false;
+        exportBtn.textContent = "Создать картинку";
     }
 }
 
@@ -244,6 +265,7 @@ async function createFinalCanvas() {
 
     init();
 });
+
 
 
 
